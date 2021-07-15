@@ -31,9 +31,12 @@ class media_player(QWidget):
         self.cModes = QComboBox()
         self.cLabels = QComboBox()
         self.hotKey = QPushButton("HotKey Setup")
-        # self.updateW = QPushButton("Update")
+        self.hotKey.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+        #self.updateW = QPushButton("Update")
         self.addBtn = QPushButton("Add")
+        self.addBtn.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         self.delBtn = QPushButton("Del")
+        self.delBtn.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         self.videoFile = QFileDialog()
         
         #creating variables for global use 
@@ -46,7 +49,7 @@ class media_player(QWidget):
         self.defaultHK2 = self.valueHK.HKpass2 
         self.defaultHK3 = self.valueHK.HKpass3 
         self.defaultHK4 = self.valueHK.HKpass4  
-        print(self.defaultHK1)
+        #print(self.defaultHK1)
      
         #calling next frame
         self.frame1()
@@ -65,9 +68,11 @@ class media_player(QWidget):
         self.cModes.addItem("Modes")
         self.cModes.addItem("Duration")
         self.cModes.addItem("Frequency")
+        self.cModes.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         self.cModes.addItem("Partial Time interval")
         self.cLabels.addItem("Engagment")
         self.cLabels.addItem("")
+        self.cLabels.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         
         #setup slider/btns/txtbox
         self.slider.setOrientation(Qt.Horizontal)
@@ -75,7 +80,9 @@ class media_player(QWidget):
         self.slider.setTickInterval(1)
         self.txtBox.setText("Select A file")
         self.fileSelect.setText("...")
+        self.fileSelect.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         self.nextPage.setText("Continue")
+        self.nextPage.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         
         #setting size
         self.slider.setMaximumWidth(600)
@@ -146,6 +153,14 @@ class media_player(QWidget):
         self.defaultHK3 = HKpass3
         self.defaultHK4 = HKpass4
         print(self.defaultHK2)
+    
+    #passes label names to main window from the hotkey class
+    def LtxtGrab(self, Ltxt1, Ltxt2, Ltxt3, Ltxt4):
+        self.Ltext1 = Ltxt1
+        self.Ltext2 = Ltxt2
+        self.Ltext3 = Ltxt3
+        self.Ltext4 = Ltxt4
+        print(Ltxt4)
 
     #this gets the data for our labels from hotkeys class
     def labelUpdater(self):
@@ -163,7 +178,7 @@ class hotKeyBinding(QWidget):
         self.setWindowTitle("Hotkey Settings")
         self.setGeometry(100, 100, 250, 100)
         
-        self.HKpass1 = "1"
+        self.HKpass1 = "q"
         self.HKpass2 = "w"
         self.HKpass3 = "e"
         self.HKpass4 = "r"
@@ -184,30 +199,36 @@ class hotKeyBinding(QWidget):
         
         self.setLayout(coreLayout)
 
-        #creating flag for HK
+        #creating flag for HK and label
         self.HKflag = -1
+        self.labelFlag = -1 
 
         #Qbuttons and labels for layout
         self.HKNum1 =QLabel("1.")
         self.HK1 = QPushButton("q")
-        self.btnTxt1 = QLineEdit("Label name")
+        self.btnTxt1 = QLineEdit("")
+        self.btnTxt1.setPlaceholderText("label name")
        
         self.HKNum2 =QLabel("2.")
         self.HK2 = QPushButton("w")
-        self.btnTxt2 = QLineEdit("Label name")
+        self.btnTxt2 = QLineEdit("")
+        self.btnTxt2.setPlaceholderText("label name")
        
         self.HKNum3 =QLabel("3.")
         self.HK3 = QPushButton("e")
-        self.btnTxt3 = QLineEdit("Label name")
+        self.btnTxt3 = QLineEdit("")
+        self.btnTxt3.setPlaceholderText("label name")
         
         self.HKNum4 =QLabel("4.")
         self.HK4 = QPushButton("r")
-        self.btnTxt4 = QLineEdit("Label name")
+        self.btnTxt4 = QLineEdit("")
+        self.btnTxt4.setPlaceholderText("label name")
              
         self.HKsave = QPushButton("save and exit")
 
+        #connection
         self.HKsave.clicked.connect(self.HKSavenClose)
-        
+
         #adding widgets
         btnLayout1.addWidget(self.HK1)
         btnLayout1.addWidget(self.btnTxt1)
@@ -250,7 +271,8 @@ class hotKeyBinding(QWidget):
             self.HK4.setText(event.text())
             self.HKpass4 = self.HK4.text()
             self.HKflag = -1
-            
+    
+    #hotkey flag        
     def HK1Clicked(self):
         self.HKflag = 1
     def HK2Clicked(self):
@@ -259,30 +281,33 @@ class hotKeyBinding(QWidget):
         self.HKflag = 3
     def HK4Clicked(self):
         self.HKflag = 4
-    
+      
     #helps pass updated info back to main class
     def HKSavenClose(self):
-        media_player.defaultUpdater(self, self.HKpass1, self.HKpass2, self.HKpass3, self.HKpass4)
+        window.defaultUpdater( self.HKpass1, self.HKpass2, self.HKpass3, self.HKpass4)
+        self.Ltxt1 = self.btnTxt1.text()
+        self.Ltxt2 = self.btnTxt2.text()
+        self.Ltxt3 = self.btnTxt3.text()
+        self.Ltxt4 = self.btnTxt4.text() 
+        window.LtxtGrab(self.Ltxt1, self.Ltxt2 , self.Ltxt3, self.Ltxt4)
         self.close()
-    
-    #clears linelabels once clicked
-    def clearLine(self):
-        happy =1
-
-    
+       
 #start of video player class
 class video_player(QWidget):
 
     def __init__(self, data, sliderSize, hk1, hk2, hk3, hk4):
         super().__init__()
+        
         #data for the file name
         self.data = data
+        
         #data for the slider length
         self.sliderSize = sliderSize
         print(self.sliderSize)
         self.setWindowTitle("Media Player")
         self.setGeometry(350, 100, 700, 500)
-        # save hk values
+        
+        #save hk values
         self.HK1 = hk1 
         self.HK2 = hk2
         self.HK3 = hk3
@@ -309,15 +334,14 @@ class video_player(QWidget):
 
         self.setFile()
 
-        #duration signal
-        #self.mediaPlayer.durationChanged.connect(self.duration_changed)
-
         #create play button
         playBtn = QPushButton('play Video')
+        playBtn.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         playBtn.clicked.connect(self.play_video)
 
         #create pause button
         pauseBtn = QPushButton('pause Video')
+        pauseBtn.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         pauseBtn.clicked.connect(self.pause_video)
  
         #create hbox layout
@@ -400,13 +424,11 @@ class video_player(QWidget):
             
             elif e.text() == self.HK4 and not e.isAutoRepeat():
                 self.frequencyCounter.append(pos)
-                print(self.frequencyCounter)
-            
+                print(self.frequencyCounter)           
                 
         elif self.videoFlag == False:
             print ("video must be playing to use hotkeys")
       
-
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = media_player()
