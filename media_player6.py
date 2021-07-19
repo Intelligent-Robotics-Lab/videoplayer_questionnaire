@@ -1,6 +1,7 @@
 import sys
 from typing import Sized
-from PyQt5.QtWidgets import QComboBox, QHBoxLayout, QApplication, QButtonGroup, QLabel, QLayout, QLineEdit, QPushButton, QSlider, QVBoxLayout, QWidget,QFileDialog, QGridLayout, QFileDialog, QMessageBox
+from PyQt5.QtWidgets import QComboBox, QHBoxLayout, QApplication, QButtonGroup, QLabel, QLayout
+from PyQt5.QtWidgets import QLineEdit, QPushButton, QSlider, QVBoxLayout, QWidget,QFileDialog, QGridLayout, QFileDialog, QMessageBox
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QCursor, QKeyEvent
 from PyQt5.QtCore import *
@@ -13,7 +14,7 @@ from PyQt5.QtCore import Qt, QUrl
 class media_player(QWidget): 
     def __init__(self):
         super().__init__()
- 
+        
         #window size and name
         self.setWindowTitle("Media Player")
         self.setFixedWidth(800)
@@ -302,8 +303,9 @@ class video_player(QWidget):
         self.data = data
         
         #data for the slider length
-        self.sliderSize = sliderSize
+        self.sliderSize = int(sliderSize)
         print(self.sliderSize)
+
         self.setWindowTitle("Media Player")
         self.setGeometry(350, 100, 700, 500)
         
@@ -324,6 +326,9 @@ class video_player(QWidget):
 
         #create media player object
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
+
+        #set up signal
+        self.mediaPlayer.positionChanged.connect(self.sliderTimer)
 
         #Tells if video is running or not
         self.videoFlag = False
@@ -360,6 +365,7 @@ class video_player(QWidget):
         self.setLayout(vboxLayout)
 
         self.mediaPlayer.setVideoOutput(videowidget)
+    
 
     #not fully sure but is in all Qmedia code i find
     def setFile(self):
@@ -376,8 +382,17 @@ class video_player(QWidget):
         self.mediaPlayer.pause()
         self.videoFlag = False
 
-    def media_length(self):
-       seconds = self.sliderSize
+    
+    def sliderTimer(self):
+        print("x")
+        print(self.mediaPlayer.position()/1000.0)
+        # if float(self.mediaPlayer.position())  >= 1000:
+        #     print("x")
+        #     if (self.mediaPlayer.position() % 1000) == 0:
+        #         #x = int(self.mediaPlayer.position()*1000)
+        #         print(self.mediaPlayer.position())
+
+
 
     #hotkey for logging  
     def keyPressEvent(self, e: QKeyEvent):
@@ -434,3 +449,4 @@ if __name__ == '__main__':
     window = media_player()
     window.show()
     sys.exit(app.exec_())
+
