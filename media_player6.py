@@ -161,7 +161,7 @@ class media_player(QWidget):
         self.Ltext2 = Ltxt2
         self.Ltext3 = Ltxt3
         self.Ltext4 = Ltxt4
-        print(Ltxt4)
+        
 
     #this gets the data for our labels from hotkeys class
     def labelUpdater(self):
@@ -302,9 +302,10 @@ class video_player(QWidget):
         #data for the file name
         self.data = data
         
+        self.pauseFlag = True
         #data for the slider length
         self.sliderSize = int(sliderSize)
-        print(self.sliderSize)
+        
 
         self.setWindowTitle("Media Player")
         self.setGeometry(350, 100, 700, 500)
@@ -314,8 +315,12 @@ class video_player(QWidget):
         self.HK2 = hk2
         self.HK3 = hk3
         self.HK4 = hk4
-        print(self.HK1)
-        print(self.HK4)
+
+        #popup box for data
+        self.popUp = QMessageBox()
+        self.popUp.setWindowTitle("Sava data")
+
+
         self.init_ui()
         self.show()
              
@@ -384,8 +389,22 @@ class video_player(QWidget):
 
     
     def sliderTimer(self):
-        print("x")
-        print(self.mediaPlayer.position()/1000.0)
+        if self.pauseFlag == True:
+            x = int(self.mediaPlayer.position()/1000)
+            if x > 1: 
+                if x % self.sliderSize  == 0:
+                    self.pauseFlag = False
+                    self.pause_video()
+                    
+                    print(x)
+                    #self.mediaPlayer.pause()
+
+                    #x = self.popUp.exec_()
+
+
+
+        #print("x")
+        #print(self.mediaPlayer.position()/1000.0)
         # if float(self.mediaPlayer.position())  >= 1000:
         #     print("x")
         #     if (self.mediaPlayer.position() % 1000) == 0:
