@@ -40,9 +40,7 @@ class media_player(QWidget):
         #creating variables for global use 
         self.data = ""
         self.sliderSize = ""
-        
-        #creating window inst for remove
-        self.removeCaller = removeWindow()
+        self.comboList = []
 
         #creating window inst for hotkey  
         self.valueHK = hotKeyBinding()
@@ -176,6 +174,8 @@ class media_player(QWidget):
         self.valueHK.show()
     
     def on_del_clicked(self):
+        
+        self.removeCaller = removeWindow(self.comboList)
         self.removeCaller.show()
         
     
@@ -186,6 +186,8 @@ class media_player(QWidget):
         if self.text:
             TempText1 = open("comboFile.txt", "a")
             TempText1.write(self.text+ "\n")
+            
+            self.comboList.append(self.text)
             TempText1.close()
             self.cLabels.addItem(self.text)
             
@@ -195,16 +197,22 @@ class media_player(QWidget):
 
         for line in TempText1:
             self.cLabels.addItem(line)
+            self.comboList.append(line)
+
         
 class removeWindow(QWidget):
        
-    def __init__(self):
+    def __init__(self, comboBox):
         super().__init__()
 
         self.setWindowTitle("Remove Window")
         self.setGeometry(100, 100, 250, 100)
+       
+        self.comboList = comboBox
+        print (self.comboList)
+       
         self.init_ui()
-
+       
     
     def init_ui(self):
         #creating layouts
@@ -230,8 +238,17 @@ class removeWindow(QWidget):
         confirmLayout.addWidget(self.cancelBtn)
         confirmLayout.addWidget(self.contBtn)
 
+        #setting txt for widget
+        self.cancelBtn.setText("Cancel")
+        self.contBtn.setText("Save and Continue")
+
+
         #setting text for Qlabel
-        self.coreInfo.setText("Select the behavior to remove and then press continue")
+        self.coreInfo.setText("Select the behavior to remove and then press continue.")
+
+        for x in self.comboList:
+            self.comboInfo.addItem(x)
+
 
        
                     
@@ -371,7 +388,6 @@ class video_player(QWidget):
         #data for the slider length
         self.sliderSize = int(sliderSize)
         
-
         self.setWindowTitle("Media Player")
         self.setGeometry(350, 100, 700, 500)
         
@@ -384,7 +400,6 @@ class video_player(QWidget):
         #popup box for data
         self.popUp = QMessageBox()
         self.popUp.setWindowTitle("Sava data")
-
 
         self.init_ui()
         self.show()
@@ -463,8 +478,6 @@ class video_player(QWidget):
                     
                     #print(x)
                     #x = self.popUp.exec_()
-
-
 
         #print("x")
         #print(self.mediaPlayer.position()/1000.0)
