@@ -1,6 +1,6 @@
 import sys
 from typing import Sized
-from PyQt5.QtWidgets import QComboBox, QHBoxLayout, QApplication, QButtonGroup, QLabel, QLayout
+from PyQt5.QtWidgets import QComboBox, QHBoxLayout, QApplication, QButtonGroup, QInputDialog, QLabel, QLayout
 from PyQt5.QtWidgets import QLineEdit, QPushButton, QSlider, QVBoxLayout, QWidget,QFileDialog, QGridLayout, QFileDialog, QMessageBox
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QCursor, QKeyEvent
@@ -17,8 +17,7 @@ class media_player(QWidget):
         
         #window size and name
         self.setWindowTitle("Media Player")
-        self.setFixedWidth(800)
-        self.setFixedHeight(150)
+        self.resize(600,270)
 
         #flag for updater
         self.flagUpdate = False
@@ -32,26 +31,31 @@ class media_player(QWidget):
         self.cModes = QComboBox()
         self.cLabels = QComboBox()
         self.hotKey = QPushButton("HotKey Setup")
-        self.hotKey.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-        #self.updateW = QPushButton("Update")
         self.addBtn = QPushButton("Add")
-        self.addBtn.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         self.delBtn = QPushButton("Del")
-        self.delBtn.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+ 
+        #Setting up file dialog 
         self.videoFile = QFileDialog()
-        
+
         #creating variables for global use 
         self.data = ""
         self.sliderSize = ""
         
-        #makes sure we have default HK values  
+        #creating window inst for remove
+        self.removeCaller = removeWindow()
+
+        #creating window inst for hotkey  
         self.valueHK = hotKeyBinding()
+
+        #makes sure we have default HK values
         self.defaultHK1 = self.valueHK.HKpass1
         self.defaultHK2 = self.valueHK.HKpass2 
         self.defaultHK3 = self.valueHK.HKpass3 
-        self.defaultHK4 = self.valueHK.HKpass4  
-        #print(self.defaultHK1)
-     
+        self.defaultHK4 = self.valueHK.HKpass4 
+
+        #update combo textbox on open
+        self.ComboTextRead()
+ 
         #calling next frame
         self.frame1()
        
@@ -62,36 +66,34 @@ class media_player(QWidget):
         top_layout = QHBoxLayout()
         modes_hotkeys =QHBoxLayout()
         labels_layout = QHBoxLayout()
-
         self.setLayout(grid)
 
-        #setting combo boxes up
+        #setting modes combo boxe up
         self.cModes.addItem("Modes")
         self.cModes.addItem("Duration")
         self.cModes.addItem("Frequency")
-        self.cModes.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         self.cModes.addItem("Partial Time interval")
-        self.cLabels.addItem("Engagment")
-        self.cLabels.addItem("")
-        self.cLabels.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-        
-        #setup slider/btns/txtbox
+  
+        #setup slider
         self.slider.setOrientation(Qt.Horizontal)
         self.slider.setTickPosition(QSlider.TicksBelow)
         self.slider.setTickInterval(1)
+        self.slider.setRange(5,30)
+
+        #setup txtbox/nextPage
         self.txtBox.setText("Select A file")
         self.fileSelect.setText("...")
-        self.fileSelect.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         self.nextPage.setText("Continue")
-        self.nextPage.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-        
-        #setting size
-        self.slider.setMaximumWidth(600)
-        self.txtBox.setMaximumWidth(600)
-        self.nextPage.setMaximumWidth(800)
-        self.fileSelect.setMaximumWidth(150)
-        self.sliderEdit.setMaximumWidth(150)
 
+        #setting up cursor hover
+        self.fileSelect.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+        self.nextPage.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+        self.cModes.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+        self.cLabels.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+        self.addBtn.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+        self.delBtn.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+        self.hotKey.setCursor(QCursor(QtCore.Qt.PointingHandCursor)) 
+       
         #adding widgets to layouts for grid
         outer_layout.addWidget(self.txtBox)
         outer_layout.addWidget(self.fileSelect)
@@ -125,16 +127,15 @@ class media_player(QWidget):
         #continue 
         self.nextPage.clicked.connect(self.on_continue_clicked)
 
-        #hotkey btn
+        #showing hotkey window on press
         self.hotKey.clicked.connect(self.on_hotkey_clicked) 
 
-    #function to swap pages
-    def on_continue_clicked(self):
-        
-        self.dialog = video_player(self.data, self.sliderSize, self.defaultHK1, self.defaultHK2
-        ,self.defaultHK3, self.defaultHK4)
-        
-        self.dialog.show()
+        #connecting input dialog box 
+        self.addBtn.clicked.connect(self.inputBoxes)
+
+        #showing removeWindow on press
+        self.delBtn.clicked.connect(self.on_del_clicked)
+
 
     #slider value 
     def changeInValue(self):
@@ -161,17 +162,79 @@ class media_player(QWidget):
         self.Ltext2 = Ltxt2
         self.Ltext3 = Ltxt3
         self.Ltext4 = Ltxt4
+
+    #function to swap pages
+    def on_continue_clicked(self):
         
-
-    #this gets the data for our labels from hotkeys class
-    def labelUpdater(self):
-        happy =1
-
-
+        self.dialog = video_player(self.data, self.sliderSize, self.defaultHK1, self.defaultHK2
+        ,self.defaultHK3, self.defaultHK4)
+        
+        self.dialog.show()
+        
     #pass to hotey setting class
     def on_hotkey_clicked(self):
         self.valueHK.show()
-                      
+    
+    def on_del_clicked(self):
+        self.removeCaller.show()
+        
+    
+    #Writing to text file and updating clabel on add
+    def inputBoxes(self):
+        self.text, addingInput = QInputDialog.getText(self, "Get text","New behavior:")
+
+        if self.text:
+            TempText1 = open("comboFile.txt", "a")
+            TempText1.write(self.text+ "\n")
+            TempText1.close()
+            self.cLabels.addItem(self.text)
+            
+    #Reading the file to populate clabel   
+    def ComboTextRead(self):
+        TempText1 = open("comboFile.txt", "r").readlines()
+
+        for line in TempText1:
+            self.cLabels.addItem(line)
+        
+class removeWindow(QWidget):
+       
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("Remove Window")
+        self.setGeometry(100, 100, 250, 100)
+        self.init_ui()
+
+    
+    def init_ui(self):
+        #creating layouts
+        coreLayout = QVBoxLayout()
+        removeLabelLayout = QHBoxLayout()
+        comboBoxLayout = QHBoxLayout()
+        confirmLayout = QHBoxLayout()
+
+        #setting layouts
+        coreLayout.addLayout(removeLabelLayout)
+        coreLayout.addLayout(comboBoxLayout)
+        coreLayout.addLayout(confirmLayout)
+        self.setLayout(coreLayout)
+       
+        #creating widgets and adding to correct layout
+        self.coreInfo = QLabel()
+        self.comboInfo = QComboBox()
+        self.cancelBtn = QPushButton()
+        self.contBtn = QPushButton()
+
+        removeLabelLayout.addWidget(self.coreInfo)
+        comboBoxLayout.addWidget(self.comboInfo)
+        confirmLayout.addWidget(self.cancelBtn)
+        confirmLayout.addWidget(self.contBtn)
+
+        #setting text for Qlabel
+        self.coreInfo.setText("Select the behavior to remove and then press continue")
+
+       
+                    
 class hotKeyBinding(QWidget):
      
     def __init__(self):
@@ -179,10 +242,12 @@ class hotKeyBinding(QWidget):
         self.setWindowTitle("Hotkey Settings")
         self.setGeometry(100, 100, 250, 100)
         
+        #default values for hotkeys
         self.HKpass1 = "q"
         self.HKpass2 = "w"
         self.HKpass3 = "e"
         self.HKpass4 = "r"
+
         self.init_ui()  
 
     def init_ui(self):
@@ -283,7 +348,7 @@ class hotKeyBinding(QWidget):
     def HK4Clicked(self):
         self.HKflag = 4
       
-    #helps pass updated info back to main class
+    #pass updated info back to main class
     def HKSavenClose(self):
         window.defaultUpdater( self.HKpass1, self.HKpass2, self.HKpass3, self.HKpass4)
         self.Ltxt1 = self.btnTxt1.text()
@@ -302,6 +367,7 @@ class video_player(QWidget):
         #data for the file name
         self.data = data
         
+        # this flag is so we can tell if the video is ready to be paused
         self.pauseFlag = True
         #data for the slider length
         self.sliderSize = int(sliderSize)
@@ -334,6 +400,9 @@ class video_player(QWidget):
 
         #set up signal
         self.mediaPlayer.positionChanged.connect(self.sliderTimer)
+        # speed up the notify rate
+
+        self.mediaPlayer.setNotifyInterval(10)
 
         #Tells if video is running or not
         self.videoFlag = False
@@ -381,6 +450,7 @@ class video_player(QWidget):
     def play_video(self):     
         self.mediaPlayer.play()
         self.videoFlag = True
+        self.pauseFlag = True
 
     #function to pause video
     def pause_video(self):
@@ -389,27 +459,15 @@ class video_player(QWidget):
 
     
     def sliderTimer(self):
+        #print("The time in the Video is: " , self.mediaPlayer.position())
         if self.pauseFlag == True:
-            x = int(self.mediaPlayer.position()/1000)
-            if x > 1: 
-                if x % self.sliderSize  == 0:
+            x = (self.sliderSize * 1000) 
+            if (int(self.mediaPlayer.position()))  >= 1000:
+                if (((self.mediaPlayer.position() % x) <= 5) | ((self.mediaPlayer.position() % x) >= (x - 5))):
+                    print("The time in the Video is: " , self.mediaPlayer.position())
                     self.pauseFlag = False
                     self.pause_video()
                     
-                    print(x)
-                    #self.mediaPlayer.pause()
-
-                    #x = self.popUp.exec_()
-
-
-
-        #print("x")
-        #print(self.mediaPlayer.position()/1000.0)
-        # if float(self.mediaPlayer.position())  >= 1000:
-        #     print("x")
-        #     if (self.mediaPlayer.position() % 1000) == 0:
-        #         #x = int(self.mediaPlayer.position()*1000)
-        #         print(self.mediaPlayer.position())
 
 
 
