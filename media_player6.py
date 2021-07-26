@@ -1,7 +1,7 @@
 
 import sys
 from typing import Sized
-from PyQt5.QtWidgets import QComboBox, QHBoxLayout, QApplication, QButtonGroup, QInputDialog, QLabel, QLayout
+from PyQt5.QtWidgets import QComboBox, QHBoxLayout, QApplication, QButtonGroup, QInputDialog, QLabel, QLayout, QDesktopWidget, QTableView 
 from PyQt5.QtWidgets import QLineEdit, QPushButton, QSlider, QVBoxLayout, QWidget,QFileDialog, QGridLayout, QFileDialog, QMessageBox
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QCursor, QKeyEvent
@@ -35,6 +35,7 @@ class media_player(QWidget):
         self.hotKey = QPushButton("HotKey Setup")
         self.addBtn = QPushButton("Add")
         self.delBtn = QPushButton("Del")
+        self.sliderLabel = QLabel()
  
         #Setting up file dialog 
         self.videoFile = QFileDialog()
@@ -80,6 +81,10 @@ class media_player(QWidget):
         self.slider.setTickPosition(QSlider.TicksBelow)
         self.slider.setTickInterval(1)
         self.slider.setRange(5,30)
+        self.slider.setSingleStep(1)
+        self.slider.setValue(5)
+        self.sliderEdit.setText(str(5))
+        self.sliderLabel.setText("Interval: ")
 
         #setup txtbox/nextPage
         self.txtBox.setText("Select A file")
@@ -107,6 +112,7 @@ class media_player(QWidget):
         modes_hotkeys.addWidget(self.hotKey)
                 
         #slider layout
+        top_layout.addWidget(self.sliderLabel)
         top_layout.addWidget(self.slider)
         top_layout.addWidget(self.sliderEdit)
        
@@ -137,10 +143,10 @@ class media_player(QWidget):
         #showing removeWindow on press
         self.delBtn.clicked.connect(self.on_del_clicked)
 
+
     #slider value 
     def changeInValue(self):
-        self.sliderSize = str(self.slider.value())
-        self.sliderEdit.setText(self.sliderSize)
+        self.sliderEdit.setText(str(self.slider.value()))
        
     #file selector
     def fileExplore(self):
@@ -166,7 +172,7 @@ class media_player(QWidget):
     #function to swap pages
     def on_continue_clicked(self):
         
-        self.dialog = video_player(self.data, self.sliderSize, self.defaultHK1, self.defaultHK2
+        self.dialog = video_player(self.data, self.slider.value(), self.defaultHK1, self.defaultHK2
         ,self.defaultHK3, self.defaultHK4)
         
         self.dialog.show()
@@ -428,17 +434,15 @@ class video_player(QWidget):
         self.sliderSize = int(sliderSize)
         
         self.setWindowTitle("Media Player")
-        self.setGeometry(350, 100, 700, 500)
-        
+        self.resize(700, 500)
+        self.center()
         #save hk values
         self.HK1 = hk1 
         self.HK2 = hk2
         self.HK3 = hk3
         self.HK4 = hk4
 
-        #popup box for data
-        self.popUp = QMessageBox()
-        self.popUp.setWindowTitle("Sava data")
+        
 
         self.init_ui()
         self.show()
@@ -492,7 +496,17 @@ class video_player(QWidget):
         self.setLayout(vboxLayout)
 
         self.mediaPlayer.setVideoOutput(videowidget)
-    
+
+    def center(self):
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
+
+    def closeEvent(self, event):
+        self.pause_video()
+        event.accept() # let the window close
+
 
     #not fully sure but is in all Qmedia code i find
     def setFile(self):
@@ -509,6 +523,7 @@ class video_player(QWidget):
     def pause_video(self):
         self.mediaPlayer.pause()
         self.videoFlag = False
+        print("Pausing the Video.")
 
     
     def sliderTimer(self):
@@ -520,8 +535,13 @@ class video_player(QWidget):
                     print("The time in the Video is: " , self.mediaPlayer.position())
                     self.pauseFlag = False
                     self.pause_video()
+                    self.promptData()
                    
 
+    def promptData(self):
+        #popup box for data
+        print(self.frequencyCounter)
+        self.pop_up = popUpTable(self.frequencyCounter)
 
 
     #hotkey for logging  
@@ -573,6 +593,72 @@ class video_player(QWidget):
                 
         elif self.videoFlag == False:
             print ("video must be playing to use hotkeys")
+
+class popUpTable(QWidget):
+    def __init__(self, data):
+        super().__init__()
+        
+        #data for the file name
+        self.data = data
+        self.setWindowTitle("Data")
+        self.resize(700, 500)
+        self.center()
+        self.init_ui()
+        self.show()
+    
+    def init_ui(self):
+        self.tableWidget = QTableView(self.data)
+        self.redoData = QPushButton()
+        self.saveData = QPushButton()
+
+
+
+
+        self.grid = QVBoxLayout()
+        self.buttons = QHBoxLayout()
+
+
+
+        self.setLayout(self.grid)
+        self.grid.addWidget(self.tableWidget)
+        self.buttons.addWidget(self.redoData, self.saveData)
+        self.grid.addLayout(self.buttons)
+
+
+        
+
+
+        
+
+    def center(self):
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
+
+class TableModel(QtCore.QAbstractTableModel):
+    def __init__(self, data):
+        super(TableModel, self).__init__()
+        self._data = data
+
+    def data(self, index, role):
+        if role == Qt.DisplayRole:
+            # See below for the nested-list data structure.
+            # .row() indexes into the outer list,
+            # .column() indexes into the sub-list
+            return self._data[index.row()][index.column()]
+
+    def rowCount(self, index):
+        # The length of the outer list.
+        return len(self._data)
+
+    def columnCount(self, index):
+        # The following takes the first sub-list, and returns
+        # the length (only works if all rows are an equal length)
+        return len(self._data[0])
+      
+
+
       
 if __name__ == '__main__':
     app = QApplication(sys.argv)
