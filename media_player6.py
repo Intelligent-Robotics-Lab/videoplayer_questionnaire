@@ -44,6 +44,7 @@ class media_player(QWidget):
         self.sliderSize = ""
         self.comboList = []
 
+
         #creating window inst for hotkey  
         self.valueHK = hotKeyBinding()
 
@@ -175,7 +176,6 @@ class media_player(QWidget):
         self.valueHK.show()
     
     def on_del_clicked(self):
-        
         self.removeCaller = removeWindow(self.comboList)
         self.comboList = []
         self.removeCaller.show()
@@ -198,13 +198,13 @@ class media_player(QWidget):
         os.replace('tempFile.txt', 'comboFile.txt')
         self.ComboTextRead()
 
-
     #Writing to text file and updating clabel on add
     def inputBoxes(self):
         self.text, addingInput = QInputDialog.getText(self, "Get text","New behavior:")
 
         if self.text:
             TempText1 = open("comboFile.txt", "a")
+
             self.textFixed = self.text.strip("\n")
             TempText1.write(self.text+ "\n")
             
@@ -226,16 +226,17 @@ class media_player(QWidget):
 class removeWindow(QWidget):
        
     def __init__(self, comboBox):
+
         super().__init__()
 
         self.setWindowTitle("Remove Window")
         self.setGeometry(100, 100, 250, 100)
-       
+
         self.comboList = comboBox
         print (self.comboList)
        
         self.init_ui()
-          
+
     def init_ui(self):
         #creating layouts
         coreLayout = QVBoxLayout()
@@ -288,6 +289,7 @@ class removeWindow(QWidget):
         print (self.comboList)
         self.close()
                    
+
 class hotKeyBinding(QWidget):
      
     def __init__(self):
@@ -420,6 +422,7 @@ class video_player(QWidget):
         #data for the file name
         self.data = data
         
+        # this flag is so we can tell if the video is ready to be paused
         self.pauseFlag = True
         #data for the slider length
         self.sliderSize = int(sliderSize)
@@ -450,6 +453,9 @@ class video_player(QWidget):
 
         #set up signal
         self.mediaPlayer.positionChanged.connect(self.sliderTimer)
+        # speed up the notify rate
+
+        self.mediaPlayer.setNotifyInterval(10)
 
         #Tells if video is running or not
         self.videoFlag = False
@@ -497,6 +503,7 @@ class video_player(QWidget):
     def play_video(self):     
         self.mediaPlayer.play()
         self.videoFlag = True
+        self.pauseFlag = True
 
     #function to pause video
     def pause_video(self):
@@ -505,23 +512,15 @@ class video_player(QWidget):
 
     
     def sliderTimer(self):
+        #print("The time in the Video is: " , self.mediaPlayer.position())
         if self.pauseFlag == True:
-            x = int(self.mediaPlayer.position()/1000)
-            if x > 1: 
-                if x % self.sliderSize  == 0:
+            x = (self.sliderSize * 1000) 
+            if (int(self.mediaPlayer.position()))  >= 1000:
+                if (((self.mediaPlayer.position() % x) <= 5) | ((self.mediaPlayer.position() % x) >= (x - 5))):
+                    print("The time in the Video is: " , self.mediaPlayer.position())
                     self.pauseFlag = False
-                   #self.mediaPlayer.pause()
-                    
-                    #print(x)
-                    #x = self.popUp.exec_()
-
-        #print("x")
-        #print(self.mediaPlayer.position()/1000.0)
-        #  if float(self.mediaPlayer.position())  >= 1000:
-             
-        #      if (self.mediaPlayer.position() % 1000) == 0:
-        #          x = int(self.mediaPlayer.position()*1000)
-        #          print(self.mediaPlayer.position())
+                    self.pause_video()
+                   
 
 
 
