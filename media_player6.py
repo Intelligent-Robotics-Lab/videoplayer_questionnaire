@@ -577,18 +577,22 @@ class video_player(QWidget):
 
             if e.text() == self.HK1 and not e.isAutoRepeat():
                 self.frequencyCounter.append(pos)
+                self.frequencyCounter.append(self.HK1)
                 print(self.frequencyCounter)
 
             elif e.text() == self.HK2 and not e.isAutoRepeat():
                 self.frequencyCounter.append(pos)
+                self.frequencyCounter.append(self.HK2)
                 print(self.frequencyCounter)
                 
             elif e.text() == self.HK3 and not e.isAutoRepeat():
                 self.frequencyCounter.append(pos)
+                self.frequencyCounter.append(self.HK3)
                 print(self.frequencyCounter)
             
             elif e.text() == self.HK4 and not e.isAutoRepeat():
                 self.frequencyCounter.append(pos)
+                self.frequencyCounter.append(self.HK4)
                 print(self.frequencyCounter)           
                 
         elif self.videoFlag == False:
@@ -599,42 +603,80 @@ class popUpTable(QWidget):
         super().__init__()
         
         #data for the file name
-        self.data = data
+        self._data = data
+        self._convertedData = self.convertTo2DArray(self._data)
         self.setWindowTitle("Data")
         self.resize(700, 500)
         self.center()
         self.init_ui()
+
+        
         self.show()
+
+        
     
     def init_ui(self):
-        self.tableWidget = QTableView(self.data)
-        self.redoData = QPushButton()
-        self.saveData = QPushButton()
-
-
-
 
         self.grid = QVBoxLayout()
         self.buttons = QHBoxLayout()
-
-
-
         self.setLayout(self.grid)
-        self.grid.addWidget(self.tableWidget)
-        self.buttons.addWidget(self.redoData, self.saveData)
+
+        self.redoData = QPushButton()
+        self.saveData = QPushButton()
+        
+        self.buttons.addWidget(self.redoData) 
+        self.buttons.addWidget(self.saveData)
         self.grid.addLayout(self.buttons)
 
+        self.tableWidget = QTableView()
 
-        
+        self.model = TableModel(self._convertedData)
+        self.tableWidget.setModel(self.model)
 
+        self.grid.addWidget(self.tableWidget)
 
-        
+    def convertTo2DArray(self, data):
+        if len(data) > 3:
+            final = []
+            for i in range(0, int(len(data)/3)):
+                tmp = []
+                for j in range(0, 3):
+                    tmp.append(data[0])
+                    data.pop(0)
+
+                final.append(tmp) 
+
+            return final
 
     def center(self):
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
+
+class DataModel(QtCore.QAbstractTableModel):
+    #bug fix need to solve the printing of multiple lines if below 4 in length
+    def __init__(self, data):
+        super(DataModel, self).__init__()
+        self._data = data
+        print(self._data)
+
+    def data(self, index, role):
+        if role == Qt.DisplayRole:
+            # See below for the nested-list data structure.
+            # .row() indexes into the outer list,
+            # .column() indexes into the sub-list
+            return self._data[index.column()]
+
+    def rowCount(self, index):
+        # The length of the outer list.
+        return len(self._data)
+
+    def columnCount(self, index):
+        # The following takes the first sub-list, and returns
+        # the length (only works if all rows are an equal length)
+        return len(self._data)
+
 
 class TableModel(QtCore.QAbstractTableModel):
     def __init__(self, data):
@@ -659,7 +701,7 @@ class TableModel(QtCore.QAbstractTableModel):
       
 
 
-      
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = media_player()
