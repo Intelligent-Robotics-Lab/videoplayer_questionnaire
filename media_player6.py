@@ -442,6 +442,10 @@ class video_player(QWidget):
         self.HK3 = hk3
         self.HK4 = hk4
 
+        #flag for key press events
+        self.iskeyPressed = False
+        self.keyPressed = ""
+
         
 
         self.init_ui()
@@ -535,6 +539,9 @@ class video_player(QWidget):
                     print("The time in the Video is: " , self.mediaPlayer.position())
                     self.pauseFlag = False
                     self.pause_video()
+                    if (self.iskeyPressed):
+                        self.frequencyCounter.append(self.mediaPlayer.position()/1000)
+                        self.frequencyCounter.append(self.keyPressed)
                     self.promptData()
                    
 
@@ -553,18 +560,26 @@ class video_player(QWidget):
 
             if e.text() == self.HK1 and not e.isAutoRepeat():
                 self.frequencyCounter.append(pos)
+                self.iskeyPressed = True
+                self.keyPressed = self.HK1
                 print(self.frequencyCounter)
             
             elif e.text() == self.HK2 and not e.isAutoRepeat():
                 self.frequencyCounter.append(pos)
+                self.iskeyPressed = True
+                self.keyPressed = self.HK2
                 print(self.frequencyCounter)
             
             elif e.text() == self.HK3 and not e.isAutoRepeat():
                 self.frequencyCounter.append(pos)
+                self.iskeyPressed = True
+                self.keyPressed = self.HK3
                 print(self.frequencyCounter)
             
             elif e.text() == self.HK4 and not e.isAutoRepeat():
                 self.frequencyCounter.append(pos)
+                self.iskeyPressed = True
+                self.keyPressed = self.HK4
                 print(self.frequencyCounter)
 
         elif self.videoFlag == False:
@@ -578,21 +593,29 @@ class video_player(QWidget):
             if e.text() == self.HK1 and not e.isAutoRepeat():
                 self.frequencyCounter.append(pos)
                 self.frequencyCounter.append(self.HK1)
+                self.iskeyPressed = False
+                self.keyPressed = ""
                 print(self.frequencyCounter)
 
             elif e.text() == self.HK2 and not e.isAutoRepeat():
                 self.frequencyCounter.append(pos)
                 self.frequencyCounter.append(self.HK2)
+                self.iskeyPressed = False
+                self.keyPressed = ""
                 print(self.frequencyCounter)
                 
             elif e.text() == self.HK3 and not e.isAutoRepeat():
                 self.frequencyCounter.append(pos)
                 self.frequencyCounter.append(self.HK3)
+                self.iskeyPressed = False
+                self.keyPressed = ""
                 print(self.frequencyCounter)
             
             elif e.text() == self.HK4 and not e.isAutoRepeat():
                 self.frequencyCounter.append(pos)
                 self.frequencyCounter.append(self.HK4)
+                self.iskeyPressed = False
+                self.keyPressed = ""
                 print(self.frequencyCounter)           
                 
         elif self.videoFlag == False:
@@ -605,6 +628,7 @@ class popUpTable(QWidget):
         #data for the file name
         self._data = data
         self._convertedData = self.convertTo2DArray(self._data)
+        print(self._convertedData)
         self.setWindowTitle("Data")
         self.resize(700, 500)
         self.center()
@@ -627,13 +651,16 @@ class popUpTable(QWidget):
         self.buttons.addWidget(self.redoData) 
         self.buttons.addWidget(self.saveData)
         self.grid.addLayout(self.buttons)
+        if self._convertedData:
+            self.tableWidget = QTableView()
+            self.model = TableModel(self._convertedData)
+            self.tableWidget.setModel(self.model)
+            self.grid.addWidget(self.tableWidget)
 
-        self.tableWidget = QTableView()
-
-        self.model = TableModel(self._convertedData)
-        self.tableWidget.setModel(self.model)
-
-        self.grid.addWidget(self.tableWidget)
+        else:
+            self.listLabel = QLabel()
+            self.listLabel.setText(str(self._data))
+            self.grid.addWidget(self.listLabel)
 
     def convertTo2DArray(self, data):
         if len(data) > 3:
@@ -653,30 +680,6 @@ class popUpTable(QWidget):
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
-
-class DataModel(QtCore.QAbstractTableModel):
-    #bug fix need to solve the printing of multiple lines if below 4 in length
-    def __init__(self, data):
-        super(DataModel, self).__init__()
-        self._data = data
-        print(self._data)
-
-    def data(self, index, role):
-        if role == Qt.DisplayRole:
-            # See below for the nested-list data structure.
-            # .row() indexes into the outer list,
-            # .column() indexes into the sub-list
-            return self._data[index.column()]
-
-    def rowCount(self, index):
-        # The length of the outer list.
-        return len(self._data)
-
-    def columnCount(self, index):
-        # The following takes the first sub-list, and returns
-        # the length (only works if all rows are an equal length)
-        return len(self._data)
-
 
 class TableModel(QtCore.QAbstractTableModel):
     def __init__(self, data):
@@ -699,9 +702,6 @@ class TableModel(QtCore.QAbstractTableModel):
         # the length (only works if all rows are an equal length)
         return len(self._data[0])
       
-
-
-
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = media_player()
