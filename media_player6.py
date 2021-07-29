@@ -3,6 +3,7 @@ import sys
 from typing import Sized
 from PyQt5.QtWidgets import QComboBox, QHBoxLayout, QApplication, QButtonGroup, QInputDialog, QLabel, QLayout, QDesktopWidget, QTableView 
 from PyQt5.QtWidgets import QLineEdit, QPushButton, QSlider, QVBoxLayout, QWidget,QFileDialog, QGridLayout, QFileDialog, QMessageBox
+from PyQt5.QtCore import pyqtSlot
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QCursor, QKeyEvent
 from PyQt5.QtCore import *
@@ -295,7 +296,6 @@ class removeWindow(QWidget):
         print (self.comboList)
         self.close()
                    
-
 class hotKeyBinding(QWidget):
      
     def __init__(self):
@@ -427,6 +427,7 @@ class video_player(QWidget):
         
         #data for the file name
         self.data = data
+        self.completeList = []
         
         # this flag is so we can tell if the video is ready to be paused
         self.pauseFlag = True
@@ -621,12 +622,25 @@ class video_player(QWidget):
         elif self.videoFlag == False:
             print ("video must be playing to use hotkeys")
 
+    def updateSaveData(self):
+        print("Adding this list onto the 2D Final List")
+        self.completeList.append(self.pop_up._temp)
+        self.frequencyCounter = []
+        print(self.completeList)
+    
+    def updateRedoData(self):
+        print("Deleting data and moving position back to before this run through.")
+        self.frequencyCounter = []
+
+#popUp class
 class popUpTable(QWidget):
     def __init__(self, data):
         super().__init__()
         
         #data for the file name
-        self._data = data
+        self._data = self.buildList(data)
+        #Have to rebuild the list because python variables only act as labels rather than C/Java variables
+        self._temp = self.buildList(data)
         self._convertedData = self.convertTo2DArray(self._data)
         print(self._convertedData)
         self.setWindowTitle("Data")
@@ -647,10 +661,15 @@ class popUpTable(QWidget):
 
         self.redoData = QPushButton()
         self.saveData = QPushButton()
-        
+        self.redoData.setText("Redo Data")
+        self.saveData.setText("Save Data")
         self.buttons.addWidget(self.redoData) 
         self.buttons.addWidget(self.saveData)
         self.grid.addLayout(self.buttons)
+
+        self.redoData.clicked.connect(self.emitRedoSignal)
+        self.saveData.clicked.connect(self.emitSaveSignal)
+
         if self._convertedData:
             self.tableWidget = QTableView()
             self.model = TableModel(self._convertedData)
@@ -662,6 +681,23 @@ class popUpTable(QWidget):
             self.listLabel.setText(str(self._data))
             self.grid.addWidget(self.listLabel)
 
+        #define two signals that are emitted when save/redo is pressed
+        # save signal will tell the video_player window that it needs to save that list to the main list, --> 2d array
+        # redo signal will tell the video_player window that it needs to del the list and remake it, also backup the position of the window to slider timer backwards
+
+    def emitSaveSignal(self):
+        window.dialog.updateSaveData()
+        self.close()
+
+    def emitRedoSignal(self):
+        window.dialog.updateRedoData()
+        self.close()
+
+    def buildList(self, x):
+        newList = []
+        for i in range(len(x)):
+            newList.append(x[i])
+        return newList
     def convertTo2DArray(self, data):
         if len(data) > 3:
             final = []
