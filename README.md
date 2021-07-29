@@ -9,9 +9,9 @@ This article describes an installation method.
 
 https://www.codecguide.com/download_kl.htm
 
-Download the Basic version, user server 1. 
+Download the Basic version, use server 1. 
 
-Run the installer, and just press next to install all of the defaults.
+Run the installer, and just press next for every window to install all of the defaults.
 
 
 
