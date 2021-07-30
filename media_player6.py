@@ -11,7 +11,7 @@ from PyQt5.QtMultimedia import QMediaPlayer , QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl
 import os
-
+import csv
 
 #main window
 class media_player(QWidget): 
@@ -447,8 +447,6 @@ class video_player(QWidget):
         self.iskeyPressed = False
         self.keyPressed = ""
 
-        
-
         self.init_ui()
         self.show()
              
@@ -464,7 +462,7 @@ class video_player(QWidget):
         self.mediaPlayer.positionChanged.connect(self.sliderTimer)
         # speed up the notify rate
 
-        self.mediaPlayer.setNotifyInterval(10)
+        self.mediaPlayer.setNotifyInterval(2)
 
         #Tells if video is running or not
         self.videoFlag = False
@@ -502,6 +500,9 @@ class video_player(QWidget):
 
         self.mediaPlayer.setVideoOutput(videowidget)
 
+        self.mediaPlayer.mediaStatusChanged.connect(self.statusChanged)
+        
+        
     def center(self):
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
@@ -536,21 +537,32 @@ class video_player(QWidget):
         if self.pauseFlag == True:
             x = (self.sliderSize * 1000) 
             if (int(self.mediaPlayer.position()))  >= 1000:
-                if (((self.mediaPlayer.position() % x) <= 5) | ((self.mediaPlayer.position() % x) >= (x - 5))):
+                if (((self.mediaPlayer.position() % x) <= 1) | ((self.mediaPlayer.position() % x) >= (x - 1))):
                     print("The time in the Video is: " , self.mediaPlayer.position())
                     self.pauseFlag = False
                     self.pause_video()
                     if (self.iskeyPressed):
                         self.frequencyCounter.append(self.mediaPlayer.position()/1000)
                         self.frequencyCounter.append(self.keyPressed)
+                        #put the flag to reset the lock on other keys here
                     self.promptData()
-                   
+        
+        
+    def statusChanged(self):
+        print("status changed")
+        print(self.mediaPlayer.mediaStatus())
+        if (self.mediaPlayer.mediaStatus() == 7):
+            self.promptEnd()
+
+    def promptEnd(self):
+        #mode 1 is end of video prompt
+        self.pop_up = popUpTable(self.frequencyCounter, 1)
 
     def promptData(self):
         #popup box for data
         print(self.frequencyCounter)
-        self.pop_up = popUpTable(self.frequencyCounter)
-
+        #mode 0 is regular slider interval
+        self.pop_up = popUpTable(self.frequencyCounter, 0)
 
     #hotkey for logging  
     def keyPressEvent(self, e: QKeyEvent):
@@ -559,25 +571,25 @@ class video_player(QWidget):
         
         if self.videoFlag == True:
 
-            if e.text() == self.HK1 and not e.isAutoRepeat():
+            if e.text() == self.HK1 and not e.isAutoRepeat() and not self.iskeyPressed:
                 self.frequencyCounter.append(pos)
                 self.iskeyPressed = True
                 self.keyPressed = self.HK1
                 print(self.frequencyCounter)
             
-            elif e.text() == self.HK2 and not e.isAutoRepeat():
+            elif e.text() == self.HK2 and not e.isAutoRepeat() and not self.iskeyPressed:
                 self.frequencyCounter.append(pos)
                 self.iskeyPressed = True
                 self.keyPressed = self.HK2
                 print(self.frequencyCounter)
             
-            elif e.text() == self.HK3 and not e.isAutoRepeat():
+            elif e.text() == self.HK3 and not e.isAutoRepeat() and not self.iskeyPressed:
                 self.frequencyCounter.append(pos)
                 self.iskeyPressed = True
                 self.keyPressed = self.HK3
                 print(self.frequencyCounter)
             
-            elif e.text() == self.HK4 and not e.isAutoRepeat():
+            elif e.text() == self.HK4 and not e.isAutoRepeat() and not self.iskeyPressed:
                 self.frequencyCounter.append(pos)
                 self.iskeyPressed = True
                 self.keyPressed = self.HK4
@@ -591,28 +603,28 @@ class video_player(QWidget):
         pos = pos/1000.0
         if self.videoFlag == True:
 
-            if e.text() == self.HK1 and not e.isAutoRepeat():
+            if e.text() == self.HK1 and not e.isAutoRepeat() and self.keyPressed == self.HK1:
                 self.frequencyCounter.append(pos)
                 self.frequencyCounter.append(self.HK1)
                 self.iskeyPressed = False
                 self.keyPressed = ""
                 print(self.frequencyCounter)
 
-            elif e.text() == self.HK2 and not e.isAutoRepeat():
+            elif e.text() == self.HK2 and not e.isAutoRepeat() and self.keyPressed == self.HK2:
                 self.frequencyCounter.append(pos)
                 self.frequencyCounter.append(self.HK2)
                 self.iskeyPressed = False
                 self.keyPressed = ""
                 print(self.frequencyCounter)
                 
-            elif e.text() == self.HK3 and not e.isAutoRepeat():
+            elif e.text() == self.HK3 and not e.isAutoRepeat() and self.keyPressed == self.HK3:
                 self.frequencyCounter.append(pos)
                 self.frequencyCounter.append(self.HK3)
                 self.iskeyPressed = False
                 self.keyPressed = ""
                 print(self.frequencyCounter)
             
-            elif e.text() == self.HK4 and not e.isAutoRepeat():
+            elif e.text() == self.HK4 and not e.isAutoRepeat() and self.keyPressed == self.HK4:
                 self.frequencyCounter.append(pos)
                 self.frequencyCounter.append(self.HK4)
                 self.iskeyPressed = False
@@ -631,12 +643,19 @@ class video_player(QWidget):
     def updateRedoData(self):
         print("Deleting data and moving position back to before this run through.")
         self.frequencyCounter = []
+        self.mediaPlayer.setPosition(self.mediaPlayer.position() - (self.sliderSize * 1000))
+
+    def updateDataAndEnd(self):
+        print("Make Window to show complete data and choose to save or not.")
+        print(self.completeList)
+        self.finalWindow = FinalTable(self.completeList)
+        
 
 #popUp class
 class popUpTable(QWidget):
-    def __init__(self, data):
+    def __init__(self, data, mode):
         super().__init__()
-        
+        self.mode = mode
         #data for the file name
         self._data = self.buildList(data)
         #Have to rebuild the list because python variables only act as labels rather than C/Java variables
@@ -646,13 +665,9 @@ class popUpTable(QWidget):
         self.setWindowTitle("Data")
         self.resize(700, 500)
         self.center()
-        self.init_ui()
-
-        
+        self.init_ui()        
         self.show()
 
-        
-    
     def init_ui(self):
 
         self.grid = QVBoxLayout()
@@ -686,8 +701,15 @@ class popUpTable(QWidget):
         # redo signal will tell the video_player window that it needs to del the list and remake it, also backup the position of the window to slider timer backwards
 
     def emitSaveSignal(self):
-        window.dialog.updateSaveData()
-        self.close()
+        if self.mode == 0:
+            window.dialog.updateSaveData()
+            self.close()
+        
+        #end of video
+        elif self.mode == 1:
+            window.dialog.updateDataAndEnd()
+            self.close()
+
 
     def emitRedoSignal(self):
         window.dialog.updateRedoData()
@@ -698,6 +720,7 @@ class popUpTable(QWidget):
         for i in range(len(x)):
             newList.append(x[i])
         return newList
+
     def convertTo2DArray(self, data):
         if len(data) > 3:
             final = []
@@ -721,6 +744,7 @@ class TableModel(QtCore.QAbstractTableModel):
     def __init__(self, data):
         super(TableModel, self).__init__()
         self._data = data
+        
 
     def data(self, index, role):
         if role == Qt.DisplayRole:
@@ -737,7 +761,81 @@ class TableModel(QtCore.QAbstractTableModel):
         # The following takes the first sub-list, and returns
         # the length (only works if all rows are an equal length)
         return len(self._data[0])
-      
+
+class FinalTable(QWidget):
+    def __init__(self, data):
+        super().__init__()
+        #data for the file name
+        self.data = data
+        self.new_data = self.buildList(self.data)
+        print(self.new_data)
+        self.setWindowTitle("Data")
+        self.resize(700, 500)
+        self.center()
+        self.init_ui()
+        self.show()
+    
+    def init_ui(self):
+
+        self.grid = QVBoxLayout()
+        self.buttons = QHBoxLayout()
+        self.setLayout(self.grid)
+
+        self.saveData = QPushButton()
+        self.saveData.setText("Save Data")
+        self.buttons.addWidget(self.saveData)
+        self.grid.addLayout(self.buttons)
+
+        self.saveData.clicked.connect(self.emitSaveSignal)
+
+        if self.new_data:
+            self.tableWidget = QTableView()
+            self.model_2 = TableModel(self.new_data)
+            self.tableWidget.setModel(self.model_2)
+            self.grid.addWidget(self.tableWidget)
+
+        else:
+            self.listLabel = QLabel()
+            self.listLabel.setText(str(self.data))
+            self.grid.addWidget(self.listLabel)
+
+    def emitSaveSignal(self):
+        self.new_file_name = 'Test_file_name.csv'
+
+        with open(self.new_file_name,"w+") as my_csv:
+            csvWriter = csv.writer(my_csv,delimiter=',')
+            for i in range(self.new_data):
+                csvWriter.writerows()
+                print("Saving to CSV")
+
+    def buildList(self, x):
+        newList = []
+        for i in range(len(x)):
+            newList.append(x[i])
+        return newList
+
+    def convertTo2DArray(self, data):
+        if len(data) > 3:
+            final = []
+            for i in range(0, int(len(data)/3)):
+                tmp = []
+                for j in range(0, 3):
+                    tmp.append(data[0])
+                    data.pop(0)
+
+                final.append(tmp) 
+
+            return final
+
+    def center(self):
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
+
+
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = media_player()
