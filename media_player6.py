@@ -12,6 +12,7 @@ from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl
 import os
 import csv
+import pandas as pd
 
 #main window
 class media_player(QWidget): 
@@ -648,9 +649,9 @@ class video_player(QWidget):
     def updateDataAndEnd(self):
         print("Make Window to show complete data and choose to save or not.")
         print(self.completeList)
+        self.completeList.append(self.pop_up._temp)
         self.finalWindow = FinalTable(self.completeList)
         
-
 #popUp class
 class popUpTable(QWidget):
     def __init__(self, data, mode):
@@ -802,11 +803,10 @@ class FinalTable(QWidget):
     def emitSaveSignal(self):
         self.new_file_name = 'Test_file_name.csv'
 
-        with open(self.new_file_name,"w+") as my_csv:
-            csvWriter = csv.writer(my_csv,delimiter=',')
-            for i in range(self.new_data):
-                csvWriter.writerows()
-                print("Saving to CSV")
+        df = pd.DataFrame(self.new_data)
+        df.to_csv(self.new_file_name, index=False, header=False)
+        self.close()
+        window.dialog.close()
 
     def buildList(self, x):
         newList = []
