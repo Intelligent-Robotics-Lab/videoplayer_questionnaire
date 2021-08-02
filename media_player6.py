@@ -11,7 +11,6 @@ from PyQt5.QtMultimedia import QMediaPlayer , QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl
 import os
-import csv
 import pandas as pd
 
 #main window
@@ -46,6 +45,7 @@ class media_player(QWidget):
         self.data = ""
         self.sliderSize = ""
         self.comboList = []
+        self.behavior = "test"
 
 
         #creating window inst for hotkey  
@@ -175,7 +175,7 @@ class media_player(QWidget):
     def on_continue_clicked(self):
         
         self.dialog = video_player(self.data, self.slider.value(), self.defaultHK1, self.defaultHK2
-        ,self.defaultHK3, self.defaultHK4)
+        ,self.defaultHK3, self.defaultHK4, self.behavior)
         
         self.dialog.show()
         
@@ -423,12 +423,14 @@ class hotKeyBinding(QWidget):
 #start of video player class
 class video_player(QWidget):
 
-    def __init__(self, data, sliderSize, hk1, hk2, hk3, hk4):
+    def __init__(self, data, sliderSize, hk1, hk2, hk3, hk4, behavior):
         super().__init__()
         
         #data for the file name
         self.data = data
+        self.behavior = behavior
         self.completeList = []
+        self.completeList.append([self.behavior])
         
         # this flag is so we can tell if the video is ready to be paused
         self.pauseFlag = True
