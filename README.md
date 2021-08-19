@@ -13,5 +13,8 @@ Download the Basic version, use server 1.
 
 Run the installer, and just press next for every window to install all of the defaults.
 
+To install the the necessary modules: use pip.
 
+`pip install pyqt5`
 
+`pip install pandas`
