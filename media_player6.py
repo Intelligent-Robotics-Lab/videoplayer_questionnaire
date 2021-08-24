@@ -1,4 +1,5 @@
 
+from io import TextIOBase
 import sys
 from typing import Sized
 from PyQt5.QtWidgets import QComboBox, QHBoxLayout, QApplication, QButtonGroup, QInputDialog, QLabel, QLayout, QDesktopWidget, QTableView 
@@ -47,7 +48,6 @@ class media_player(QWidget):
         self.comboList = []
         self.behavior = "test"
 
-
         #creating window inst for hotkey  
         self.valueHK = hotKeyBinding()
 
@@ -56,6 +56,12 @@ class media_player(QWidget):
         self.defaultHK2 = self.valueHK.HKpass2 
         self.defaultHK3 = self.valueHK.HKpass3 
         self.defaultHK4 = self.valueHK.HKpass4 
+
+        #make default Label values
+        self.Ltext1 = ""
+        self.Ltext2 = ""
+        self.Ltext3 = ""
+        self.Ltext4 = ""
 
         #update combo textbox on open
         self.ComboTextRead()
@@ -145,7 +151,6 @@ class media_player(QWidget):
         #showing removeWindow on press
         self.delBtn.clicked.connect(self.on_del_clicked)
 
-
     #slider value 
     def changeInValue(self):
         self.sliderEdit.setText(str(self.slider.value()))
@@ -175,7 +180,7 @@ class media_player(QWidget):
     def on_continue_clicked(self):
         
         self.dialog = video_player(self.data, self.slider.value(), self.defaultHK1, self.defaultHK2
-        ,self.defaultHK3, self.defaultHK4, self.behavior)
+        ,self.defaultHK3, self.defaultHK4, self.Ltext1, self.Ltext2, self.Ltext3, self.Ltext4, self.behavior)
         
         self.dialog.show()
         
@@ -334,22 +339,22 @@ class hotKeyBinding(QWidget):
         #Qbuttons and labels for layout
         self.HKNum1 =QLabel("1.")
         self.HK1 = QPushButton("q")
-        self.btnTxt1 = QLineEdit("")
+        self.btnTxt1 = QLineEdit("Label 1")
         self.btnTxt1.setPlaceholderText("label name")
        
         self.HKNum2 =QLabel("2.")
         self.HK2 = QPushButton("w")
-        self.btnTxt2 = QLineEdit("")
+        self.btnTxt2 = QLineEdit("Label 2")
         self.btnTxt2.setPlaceholderText("label name")
        
         self.HKNum3 =QLabel("3.")
         self.HK3 = QPushButton("e")
-        self.btnTxt3 = QLineEdit("")
+        self.btnTxt3 = QLineEdit("Label 3")
         self.btnTxt3.setPlaceholderText("label name")
         
         self.HKNum4 =QLabel("4.")
         self.HK4 = QPushButton("r")
-        self.btnTxt4 = QLineEdit("")
+        self.btnTxt4 = QLineEdit("Label 4")
         self.btnTxt4.setPlaceholderText("label name")
              
         self.HKsave = QPushButton("save and exit")
@@ -385,12 +390,12 @@ class hotKeyBinding(QWidget):
             self.HKpass1 = self.HK1.text()
             self.HKflag = -1
                      
-        elif self.HKflag ==2:
+        elif self.HKflag == 2:
             self.HK2.setText(event.text())
             self.HKpass2 = self.HK2.text()
             self.HKflag = -1
                   
-        elif self.HKflag ==3:
+        elif self.HKflag == 3:
             self.HK3.setText(event.text())
             self.HKpass3 = self.HK3.text()
             self.HKflag = -1
@@ -410,7 +415,7 @@ class hotKeyBinding(QWidget):
     def HK4Clicked(self):
         self.HKflag = 4
       
-    #pass updated info back to main class
+    #pass updated HK back to main class
     def HKSavenClose(self):
         window.defaultUpdater( self.HKpass1, self.HKpass2, self.HKpass3, self.HKpass4)
         self.Ltxt1 = self.btnTxt1.text()
@@ -419,11 +424,15 @@ class hotKeyBinding(QWidget):
         self.Ltxt4 = self.btnTxt4.text() 
         window.LtxtGrab(self.Ltxt1, self.Ltxt2 , self.Ltxt3, self.Ltxt4)
         self.close()
+
+    #pass updated HK txt to main class 
+    def HKsavenClose(self):
+        window.defaultTxtUpdater()
        
 #start of video player class
 class video_player(QWidget):
 
-    def __init__(self, data, sliderSize, hk1, hk2, hk3, hk4, behavior):
+    def __init__(self, data, sliderSize, hk1, hk2, hk3, hk4, L1, L2, L3, L4, behavior):
         super().__init__()
         
         #data for the file name
@@ -445,6 +454,12 @@ class video_player(QWidget):
         self.HK2 = hk2
         self.HK3 = hk3
         self.HK4 = hk4
+
+        #Label names
+        self.L1 = L1
+        self.L2 = L2
+        self.L3 = L3
+        self.L4 = L4
 
         #flag for key press events
         self.iskeyPressed = False
@@ -608,28 +623,40 @@ class video_player(QWidget):
 
             if e.text() == self.HK1 and not e.isAutoRepeat() and self.keyPressed == self.HK1:
                 self.frequencyCounter.append(pos)
-                self.frequencyCounter.append(self.HK1)
+                if self.L1 != "":
+                    self.frequencyCounter.append(self.L1)
+                else:
+                    self.frequencyCounter.append(self.HK1)
                 self.iskeyPressed = False
                 self.keyPressed = ""
                 print(self.frequencyCounter)
 
             elif e.text() == self.HK2 and not e.isAutoRepeat() and self.keyPressed == self.HK2:
                 self.frequencyCounter.append(pos)
-                self.frequencyCounter.append(self.HK2)
+                if self.L2 != "":
+                    self.frequencyCounter.append(self.L2)
+                else:
+                    self.frequencyCounter.append(self.HK2)
                 self.iskeyPressed = False
                 self.keyPressed = ""
                 print(self.frequencyCounter)
                 
             elif e.text() == self.HK3 and not e.isAutoRepeat() and self.keyPressed == self.HK3:
                 self.frequencyCounter.append(pos)
-                self.frequencyCounter.append(self.HK3)
+                if self.L3 != "":
+                    self.frequencyCounter.append(self.L3)
+                else: 
+                    self.frequencyCounter.append(self.HK3)
                 self.iskeyPressed = False
                 self.keyPressed = ""
                 print(self.frequencyCounter)
             
             elif e.text() == self.HK4 and not e.isAutoRepeat() and self.keyPressed == self.HK4:
                 self.frequencyCounter.append(pos)
-                self.frequencyCounter.append(self.HK4)
+                if self.L4 != "":
+                    self.frequencyCounter.append(self.L4)
+                else:
+                    self.frequencyCounter.append(self.HK4)
                 self.iskeyPressed = False
                 self.keyPressed = ""
                 print(self.frequencyCounter)           
