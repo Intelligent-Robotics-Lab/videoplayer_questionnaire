@@ -123,7 +123,7 @@ class media_player(QWidget):
 
         # setup txtbox/nextPage
         self.txtBox.setText("Select A file")
-        self.fileSelect.setText("...")
+        self.fileSelect.setText("Browse")
         self.nextPage.setText("Continue")
 
         # setting up cursor hover
@@ -184,7 +184,9 @@ class media_player(QWidget):
 
     # file selector
     def fileExplore(self):
-        self.filename, _ = QFileDialog.getOpenFileName(self, "Open Video")
+        self.filename, _ = QFileDialog.getOpenFileName(
+            self, "Open Video", filter="video (*.mp4)"
+        )
         self.txtBox.setText(self.filename)
         self.data = self.filename
 
