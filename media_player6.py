@@ -90,6 +90,12 @@ class media_player(QWidget):
         self.defaultHK3 = self.valueHK.HKpass3
         self.defaultHK4 = self.valueHK.HKpass4
 
+        # make default Label values
+        self.Ltext1 = ""
+        self.Ltext2 = ""
+        self.Ltext3 = ""
+        self.Ltext4 = ""
+
         # update combo textbox on open
         self.ComboTextRead()
 
