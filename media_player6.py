@@ -758,7 +758,7 @@ class video_player(QWidget):
 
 # popUp class
 class popUpTable(QWidget):
-    def __init__(self, data, mode):
+    def __init__(self, data, mode):  # data param is the frequencycounter list
         super().__init__()
         self.mode = mode
         # data for the file name
