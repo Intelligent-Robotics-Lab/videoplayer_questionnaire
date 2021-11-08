@@ -31,6 +31,7 @@ from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl
 import os
 import pandas as pd
+import bisect
 
 
 # helper function ms to minutes:seconds
@@ -490,6 +491,9 @@ class video_player(QWidget):
         # data for the slider length
         self.sliderSize = int(sliderSize)
 
+        self.last_time = self.sliderSize * 1000
+        self.interval_list = []
+
         self.setWindowTitle("Media Player")
         self.resize(800, 600)
         self.center()
@@ -513,6 +517,8 @@ class video_player(QWidget):
 
         # create media player object
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
+        # self.mediaPlayer.durationChanged.connect(self.interval_calc)
+        #print("Duration is:", self.mediaPlayer.duration())
 
         # set up signal
         self.mediaPlayer.positionChanged.connect(self.sliderTimer)
@@ -573,10 +579,24 @@ class video_player(QWidget):
         # Changes duration of the video
         self.mediaPlayer.durationChanged.connect(self.durationChanged)
 
+    # def interval_calc(self, duration):
+    #     # for i in range(0, self.mediaPlayer.duration(), self.sliderSize*1000):
+    #     #     self.interval_list.append(i)
+    #     for i in range(0, duration, self.sliderSize*1000):
+    #         self.interval_list.append(i)
+    #     print(self.interval_list)
+        return(self.interval_list)
     # Adjusts video position from slider
     # position has been changed to position param
+
     def positionChanged(self, position):
         self.positionSlider.setValue(position)
+        # if position < self.last_time:
+        #     bisect.insort(self.interval_list, position)
+        #     self.last_time = self.interval_list[self.interval_list.index(
+        #         position) + 1]
+        #     self.interval_list.remove(position)
+
         self.label.setText(ms_fix(position))
 
     # changes duration of content to duration param
@@ -620,17 +640,39 @@ class video_player(QWidget):
         self.mediaPlayer.pause()
         self.videoFlag = False
         print("Pausing the Video.")
+    '''
+    last_time = -1
+    0 --> -1
+    5 --> -1 redo
+    last_time = 5
+    0 --> 5 save
+    5 --> 10 save
+    10 --> 15 redo
+    last_time = 15
+    10 --> 15
+    '''
 
     def sliderTimer(self):
         # print("The time in the Video is: ", self.mediaPlayer.position())
         if self.pauseFlag == True:
             x = self.sliderSize * 1000
-            if (int(self.mediaPlayer.position())) >= 1000:
+            # If you move slider backwards adjust self.last_time
+            # if self.mediaPlayer.position() < self.last_time and self.mediaPlayer.mediaStatus() == 4:
+            #     bisect.insort(self.interval_list, self.mediaPlayer.position())
+            #     self.last_time = self.interval_list[self.interval_list.index(
+            #         self.mediaPlayer.postion()) + 1]
+            #     self.interval_list.remove(self.mediaPlayer.position())
+
+            #     print('Reversed last time:', self.last_time)
+
+            # off by one error or self.mediaplyer.pos >= self.last_time + 1
+            if (int(self.mediaPlayer.position())) >= 1000 and (self.mediaPlayer.position() >= self.last_time):
                 if ((self.mediaPlayer.position() % x) <= 1) | (
                     (self.mediaPlayer.position() % x) >= (x - 1)
                 ):
                     print("The time in the Video is: ",
                           self.mediaPlayer.position())
+                    # self.last_time = self.mediaPlayer.position()
                     self.pauseFlag = False
                     self.pause_video()
                     if self.iskeyPressed:
@@ -753,13 +795,40 @@ class video_player(QWidget):
         self.completeList.append(self.pop_up._temp)
         self.frequencyCounter = []
         print(self.completeList)
+        self.last_time = self.mediaPlayer.position()
 
     def updateRedoData(self):
         print("Deleting data and moving position back to before this run through.")
         self.frequencyCounter = []
-        self.mediaPlayer.setPosition(
-            self.mediaPlayer.position() - (self.sliderSize * 1000)
-        )
+        x = self.sliderSize * 1000
+        if self.mediaPlayer.position() % x == 0:
+            self.mediaPlayer.setPosition(
+                self.mediaPlayer.position() - (self.sliderSize * 1000)
+            )
+
+            print("returning to:", self.mediaPlayer.position() -
+                  (self.sliderSize * 1000))
+
+            self.last_time = self.mediaPlayer.position()
+        elif self.mediaPlayer.position() % x == 1:
+            self.mediaPlayer.setPosition(
+                self.mediaPlayer.position() - (self.sliderSize * 1000) - 1
+            )
+            print("returning to:", self.mediaPlayer.position() -
+                  (self.sliderSize * 1000) - 1)
+
+            self.last_time = self.mediaPlayer.position() - 1
+        elif self.mediaPlayer.position() % x > 1:
+            self.mediaPlayer.setPosition(
+                self.mediaPlayer.position() - (self.mediaPlayer.position() % x)
+            )
+            print("returning to:", self.mediaPlayer.position() -
+                  (self.mediaPlayer.position() % x))
+
+            self.last_time = self.mediaPlayer.position()
+        else:
+            print('error')
+        #self.last_time = self.mediaPlayer.position()
 
     def updateDataAndEnd(self):
         print("Make Window to show complete data and choose to save or not.")
