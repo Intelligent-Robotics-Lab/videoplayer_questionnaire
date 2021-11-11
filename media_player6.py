@@ -86,6 +86,7 @@ class media_player(QWidget):
         self.valueHK = hotKeyBinding()
 
         # makes sure we have default HK values
+        # attributes of each instance defaultHK#
         self.defaultHK1 = self.valueHK.HKpass1
         self.defaultHK2 = self.valueHK.HKpass2
         self.defaultHK3 = self.valueHK.HKpass3
@@ -211,8 +212,9 @@ class media_player(QWidget):
         self.Ltext2 = Ltxt2
         self.Ltext3 = Ltxt3
         self.Ltext4 = Ltxt4
+        print(self.Ltext1)
 
-    # function to swap pages
+    # function to swap pages, brings up media player
     def on_continue_clicked(self):
 
         self.dialog = video_player(
@@ -369,7 +371,6 @@ class hotKeyBinding(QWidget):
         btnLayout2 = QHBoxLayout()
         btnLayout3 = QHBoxLayout()
         btnLayout4 = QHBoxLayout()
-
         coreLayout.addLayout(btnLayout1)
         coreLayout.addLayout(btnLayout2)
         coreLayout.addLayout(btnLayout3)
@@ -517,7 +518,9 @@ class video_player(QWidget):
 
         # create media player object
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
-        # self.mediaPlayer.durationChanged.connect(self.interval_calc)
+
+        # Creates intervals of the duration of video based on selected interval size
+        self.mediaPlayer.durationChanged.connect(self.interval_calc)
         #print("Duration is:", self.mediaPlayer.duration())
 
         # set up signal
@@ -579,13 +582,13 @@ class video_player(QWidget):
         # Changes duration of the video
         self.mediaPlayer.durationChanged.connect(self.durationChanged)
 
-    # def interval_calc(self, duration):
-    #     # for i in range(0, self.mediaPlayer.duration(), self.sliderSize*1000):
-    #     #     self.interval_list.append(i)
-    #     for i in range(0, duration, self.sliderSize*1000):
-    #         self.interval_list.append(i)
-    #     print(self.interval_list)
-        return(self.interval_list)
+    def interval_calc(self, duration):
+        # for i in range(0, self.mediaPlayer.duration(), self.sliderSize*1000):
+        #     self.interval_list.append(i)
+        for i in range(0, duration, self.sliderSize*1000):
+            self.interval_list.append(i)
+        print(self.interval_list)
+        # return(self.interval_list)
     # Adjusts video position from slider
     # position has been changed to position param
 
@@ -657,13 +660,13 @@ class video_player(QWidget):
         if self.pauseFlag == True:
             x = self.sliderSize * 1000
             # If you move slider backwards adjust self.last_time
-            # if self.mediaPlayer.position() < self.last_time and self.mediaPlayer.mediaStatus() == 4:
-            #     bisect.insort(self.interval_list, self.mediaPlayer.position())
-            #     self.last_time = self.interval_list[self.interval_list.index(
-            #         self.mediaPlayer.postion()) + 1]
-            #     self.interval_list.remove(self.mediaPlayer.position())
+            if self.last_time - self.mediaPlayer.position() > x:
+                bisect.insort(self.interval_list, self.mediaPlayer.position())
+                self.last_time = self.interval_list[self.interval_list.index(
+                    self.mediaPlayer.position()) + 1]
+                self.interval_list.remove(self.mediaPlayer.position())
 
-            #     print('Reversed last time:', self.last_time)
+                print('Reversed last time:', self.last_time)
 
             # off by one error or self.mediaplyer.pos >= self.last_time + 1
             if (int(self.mediaPlayer.position())) >= 1000 and (self.mediaPlayer.position() >= self.last_time):
