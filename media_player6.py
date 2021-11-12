@@ -42,6 +42,7 @@ def ms_fix(ms):
     seconds = int(seconds)
     minutes = (ms / (1000 * 60)) % 60
     minutes = int(minutes)
+
     if seconds < 10:
         return "{}:0{}".format(minutes, seconds)
     else:
@@ -519,24 +520,21 @@ class video_player(QWidget):
         # create media player object
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
 
-        # Creates intervals of the duration of video based on selected interval size
-        self.mediaPlayer.durationChanged.connect(self.interval_calc)
-        #print("Duration is:", self.mediaPlayer.duration())
-
-        # set up signal
-        self.mediaPlayer.positionChanged.connect(self.sliderTimer)
         # speed up the notify rate
-
         self.mediaPlayer.setNotifyInterval(2)
 
         # Tells if video is running or not
         self.videoFlag = False
 
         # create videowidget object
-
         videowidget = QVideoWidget()
 
         self.setFile()
+
+        # Create label for video position
+        self.label = QLabel(
+            ms_fix(self.mediaPlayer.duration()) + '/' + ms_fix(self.mediaPlayer.duration()))
+        self.label.setAlignment(Qt.AlignCenter)
 
         # create play button
         playBtn = QPushButton("play Video")
@@ -548,24 +546,15 @@ class video_player(QWidget):
         pauseBtn.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         pauseBtn.clicked.connect(self.pause_video)
 
-        # Create slider
-        self.positionSlider = QSlider(Qt.Horizontal)
-        self.positionSlider.setRange(0, 0)
-        self.positionSlider.sliderMoved.connect(self.setPosition)
-
-        # Create label for video position
-        self.label = QLabel(ms_fix((self.mediaPlayer.position())))
-
         # create hbox layout
         hboxLayout = QHBoxLayout()
         hboxLayout.setContentsMargins(0, 0, 0, 0)
 
         # set widgets to the hbox layout
 
+        hboxLayout.addWidget(self.label)
         hboxLayout.addWidget(playBtn)
         hboxLayout.addWidget(pauseBtn)
-        hboxLayout.addWidget(self.label)
-        hboxLayout.addWidget(self.positionSlider)
 
         # create vbox layout
         vboxLayout = QVBoxLayout()
@@ -574,47 +563,20 @@ class video_player(QWidget):
 
         self.setLayout(vboxLayout)
 
+        # set up signal
+        self.mediaPlayer.positionChanged.connect(self.sliderTimer)
+
+        # Change the timer
+        self.mediaPlayer.positionChanged.connect(self.set_timer)
+
         self.mediaPlayer.setVideoOutput(videowidget)
 
         self.mediaPlayer.mediaStatusChanged.connect(self.statusChanged)
-        # Changes the timer
-        self.mediaPlayer.positionChanged.connect(self.positionChanged)
-        # Changes duration of the video
-        self.mediaPlayer.durationChanged.connect(self.durationChanged)
 
-    def interval_calc(self, duration):
-        # for i in range(0, self.mediaPlayer.duration(), self.sliderSize*1000):
-        #     self.interval_list.append(i)
-        for i in range(0, duration, self.sliderSize*1000):
-            self.interval_list.append(i)
-        print(self.interval_list)
-        # return(self.interval_list)
-    # Adjusts video position from slider
-    # position has been changed to position param
-
-    def positionChanged(self, position):
-        self.positionSlider.setValue(position)
-        # if position < self.last_time:
-        #     bisect.insort(self.interval_list, position)
-        #     self.last_time = self.interval_list[self.interval_list.index(
-        #         position) + 1]
-        #     self.interval_list.remove(position)
-
-        self.label.setText(ms_fix(position))
-
-    # changes duration of content to duration param
-    def durationChanged(self, duration):
-        self.positionSlider.setRange(0, duration)
-
-    # Sets position of video from slider time
-    def setPosition(self, position):
-
-        # Time is in milliseconds
-        ms = self.mediaPlayer.position()
-        fixed_time = ms_fix(ms)
-
-        self.label.setText(fixed_time)
-        self.mediaPlayer.setPosition(position)
+    # Sets the time of the timer
+    def set_timer(self, position):
+        self.label.setText(ms_fix(position) + '/' +
+                           ms_fix(self.mediaPlayer.duration()))
 
     def center(self):
         qr = self.frameGeometry()
@@ -659,14 +621,6 @@ class video_player(QWidget):
         # print("The time in the Video is: ", self.mediaPlayer.position())
         if self.pauseFlag == True:
             x = self.sliderSize * 1000
-            # If you move slider backwards adjust self.last_time
-            if self.last_time - self.mediaPlayer.position() > x:
-                bisect.insort(self.interval_list, self.mediaPlayer.position())
-                self.last_time = self.interval_list[self.interval_list.index(
-                    self.mediaPlayer.position()) + 1]
-                self.interval_list.remove(self.mediaPlayer.position())
-
-                print('Reversed last time:', self.last_time)
 
             # off by one error or self.mediaplyer.pos >= self.last_time + 1
             if (int(self.mediaPlayer.position())) >= 1000 and (self.mediaPlayer.position() >= self.last_time):
@@ -799,6 +753,8 @@ class video_player(QWidget):
         self.frequencyCounter = []
         print(self.completeList)
         self.last_time = self.mediaPlayer.position()
+        print('last time:', self.last_time)
+        print('time in video is:', self.mediaPlayer.position())
 
     def updateRedoData(self):
         print("Deleting data and moving position back to before this run through.")
@@ -813,6 +769,7 @@ class video_player(QWidget):
                   (self.sliderSize * 1000))
 
             self.last_time = self.mediaPlayer.position()
+            print("last time is: ", self.last_time)
         elif self.mediaPlayer.position() % x == 1:
             self.mediaPlayer.setPosition(
                 self.mediaPlayer.position() - (self.sliderSize * 1000) - 1
@@ -821,17 +778,31 @@ class video_player(QWidget):
                   (self.sliderSize * 1000) - 1)
 
             self.last_time = self.mediaPlayer.position() - 1
-        elif self.mediaPlayer.position() % x > 1:
+            print("last time is: ", self.last_time)
+# 10002, 9999
+# 10002 % 10000 = 2, 9999 % 10000 = 9999
+# return_time = position - interval
+# return_time = 10002 - 10000 = 2 or 9999 - 10000 = -1
+        # unlikely time will stop over 2 milliseconds over
+        elif self.mediaPlayer.position() % x == 2:
+            self.mediaPlayer.setPosition(
+                self.mediaPlayer.position() - (self.sliderSize * 1000) - 2
+            )
+            print("returning to:", self.mediaPlayer.position() -
+                  (self.sliderSize * 1000) - 2)
+
+            self.last_time = self.mediaPlayer.position() - 2
+            print("last time is: ", self.last_time)
+
+        else:
+            self.last_time = self.mediaPlayer.position()
             self.mediaPlayer.setPosition(
                 self.mediaPlayer.position() - (self.mediaPlayer.position() % x)
             )
             print("returning to:", self.mediaPlayer.position() -
                   (self.mediaPlayer.position() % x))
 
-            self.last_time = self.mediaPlayer.position()
-        else:
-            print('error')
-        #self.last_time = self.mediaPlayer.position()
+            print("last time is: ", self.last_time)
 
     def updateDataAndEnd(self):
         print("Make Window to show complete data and choose to save or not.")
@@ -847,10 +818,11 @@ class popUpTable(QWidget):
         self.mode = mode
         # data for the file name
         self._data = self.buildList(data)
+        print('self._data:', self._data)
         # Have to rebuild the list because python variables only act as labels rather than C/Java variables
         self._temp = self.buildList(data)
         self._convertedData = self.convertTo2DArray(self._data)
-        print(self._convertedData)
+        print('converted data:', self._convertedData)
         self.setWindowTitle("Data")
         self.resize(700, 500)
         self.center()
