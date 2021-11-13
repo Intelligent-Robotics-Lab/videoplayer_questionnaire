@@ -485,7 +485,7 @@ class video_player(QWidget):
         self.data = data
         self.behavior = behavior
         self.completeList = []
-        self.completeList.append([self.behavior])
+        self.completeList.append(['Key Pressed', 'Key Released', 'Label'])
 
         # this flag is so we can tell if the video is ready to be paused
         self.pauseFlag = True
@@ -493,7 +493,6 @@ class video_player(QWidget):
         self.sliderSize = int(sliderSize)
 
         self.last_time = self.sliderSize * 1000
-        self.interval_list = []
 
         self.setWindowTitle("Media Player")
         self.resize(800, 600)
@@ -610,17 +609,6 @@ class video_player(QWidget):
         self.mediaPlayer.pause()
         self.videoFlag = False
         print("Pausing the Video.")
-    '''
-    last_time = -1
-    0 --> -1
-    5 --> -1 redo
-    last_time = 5
-    0 --> 5 save
-    5 --> 10 save
-    10 --> 15 redo
-    last_time = 15
-    10 --> 15
-    '''
 
     def sliderTimer(self):
         # print("The time in the Video is: ", self.mediaPlayer.position())
@@ -751,7 +739,8 @@ class video_player(QWidget):
     def updateSaveData(self):
         print("Adding this list onto the 2D Final List")
         if len(self.pop_up._temp) > 0:
-            self.completeList.append(self.pop_up._temp)
+            for row in self.pop_up._convertedData:
+                self.completeList.append(row)
         self.frequencyCounter = []
         print(self.completeList)
         self.last_time = self.mediaPlayer.position()
@@ -810,7 +799,8 @@ class video_player(QWidget):
         print("Make Window to show complete data and choose to save or not.")
         print(self.completeList)
         if len(self.pop_up._temp) > 0:
-            self.completeList.append(self.pop_up._temp)
+            for row in self.pop_up._convertedData:
+                self.completeList.append(row)
         self.finalWindow = FinalTable(self.completeList)
 
 
@@ -896,6 +886,8 @@ class popUpTable(QWidget):
                 final.append(tmp)
 
             return final
+        else:
+            return [data]
 
     def center(self):
         qr = self.frameGeometry()
@@ -931,7 +923,7 @@ class FinalTable(QWidget):
         super().__init__()
         # data for the file name
         self.data = data
-        self.new_data = self.buildList(self.data)
+        self.new_data = self.data
         print(self.new_data)
         self.setWindowTitle("Data")
         self.resize(700, 500)
@@ -989,6 +981,8 @@ class FinalTable(QWidget):
                 final.append(tmp)
 
             return final
+        else:
+            return [data]
 
     def center(self):
         qr = self.frameGeometry()
