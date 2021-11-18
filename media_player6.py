@@ -31,6 +31,7 @@ from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl
 import os
+from numpy import e
 import pandas as pd
 import bisect
 
@@ -494,8 +495,6 @@ class video_player(QWidget):
         # data for the slider length
         self.sliderSize = int(sliderSize)
 
-        self.last_time = self.sliderSize * 1000
-
         self.setWindowTitle("Media Player")
         self.resize(900, 700)
         self.center()
@@ -514,7 +513,6 @@ class video_player(QWidget):
         # flag for key press events
         self.iskeyPressed = False
         self.keyPressed = ""
-        self.interval = 1
 
         self.init_ui()
         self.show()
@@ -554,15 +552,9 @@ class video_player(QWidget):
         pauseBtn.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         pauseBtn.clicked.connect(self.pause_video)
 
-        # create rewind button
-        rev_int = QPushButton("Reverse Interval")
-        rev_int.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-        rev_int.clicked.connect(self.reverse_int)
-
-        # create skip button
-        skip_int = QPushButton("Skip Interval")
-        skip_int.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-        skip_int.clicked.connect(self.fwd_int)
+        self.positionSlider = QSlider(Qt.Horizontal)
+        self.positionSlider.setRange(0, 0)
+        self.positionSlider.sliderMoved.connect(self.setPosition)
 
         # create hbox layout
         hboxLayout = QHBoxLayout()
@@ -571,10 +563,9 @@ class video_player(QWidget):
         # set widgets to the hbox layout
 
         hboxLayout.addWidget(self.label)
+        hboxLayout.addWidget(self.positionSlider)
         hboxLayout.addWidget(playBtn)
         hboxLayout.addWidget(pauseBtn)
-        hboxLayout.addWidget(rev_int)
-        hboxLayout.addWidget(skip_int)
 
         # create vbox layout
         vboxLayout = QVBoxLayout()
@@ -583,21 +574,22 @@ class video_player(QWidget):
 
         self.setLayout(vboxLayout)
 
-        self.rev_flag = False
-        self.skip_flag = False
-        self.replace_flag = False
-        self.presses = 0
         # set up signal
         self.mediaPlayer.positionChanged.connect(self.sliderTimer)
-
-        # Change the timer
-        self.mediaPlayer.positionChanged.connect(self.set_timer)
 
         self.mediaPlayer.setVideoOutput(videowidget)
 
         self.mediaPlayer.mediaStatusChanged.connect(self.statusChanged)
 
+        self.mediaPlayer.positionChanged.connect(self.positionChanged)
+
         self.mediaPlayer.durationChanged.connect(self.interval_calc)
+
+        self.mediaPlayer.durationChanged.connect(self.durationChanged)
+
+    # changes duration of content to duration param
+    def durationChanged(self, duration):
+        self.positionSlider.setRange(0, duration)
 
     def interval_calc(self, duration):
         for i in range(0, duration, self.sliderSize*1000):
@@ -605,10 +597,18 @@ class video_player(QWidget):
         self.interval_list.append(duration)
         print(self.interval_list)
 
-    # Sets the time of the timer
-    def set_timer(self, position):
+    def positionChanged(self, position):
+        # Time is in milliseconds
+        self.positionSlider.setValue(position)
         self.label.setText(ms_fix(position) + '/' +
                            ms_fix(self.mediaPlayer.duration()))
+
+    # Sets the time of the timer
+
+    def setPosition(self, position):
+        self.label.setText(ms_fix(position) + '/' +
+                           ms_fix(self.mediaPlayer.duration()))
+        self.mediaPlayer.setPosition(position)
 
     def center(self):
         qr = self.frameGeometry()
@@ -638,93 +638,31 @@ class video_player(QWidget):
         self.videoFlag = False
         print("Pausing the Video.")
 
-    def reverse_int(self):
-        self.presses += 1
-        self.rev_flag = True
-        self.interval -= 1
-        self.last_time = self.mediaPlayer.position() - 1
-        print('last time:', self.last_time)
-        pre_reset_pos = self.mediaPlayer.position() - (self.sliderSize*1000) + 1
-        bisect.insort(self.interval_list, pre_reset_pos)
-
-        self.mediaPlayer.setPosition(
-            self.interval_list[self.interval_list.index(pre_reset_pos) - 1] + 1)
-
-    def fwd_int(self):
-        self.skip_flag = True
-        self.interval += 1
-        self.mediaPlayer.setPosition(
-            self.mediaPlayer.position() + (self.sliderSize * 1000))
-
-    # def interval_prompt(self, i):
-    #     if i.text() == '&Yes':
-    #         print('hello')
-    #         print('completelist before:', self.completeList)
-    #         print('interval is:', self.interval)
-    #         df = pd.DataFrame(self.completeList)
-    #         print(df)
-    #         df.drop(df[df[3] == self.interval].index, inplace=True)
-    #         self.completeList = df.values.tolist()
-    #         print('completelist after:', self.completeList)
-    #     else:
-    #         self.mediaPlayer.setPosition(
-    #             self.mediaPlayer.position() + (self.sliderSize * 1000))
-    #         self.interval += 1
-
     def sliderTimer(self):
         #print("The time in the Video is: ", self.mediaPlayer.position())
 
         if self.pauseFlag == True:
             x = self.sliderSize * 1000
-            if self.rev_flag == True:
-                self.pauseFlag = False
-                self.pause_video()
-                df = pd.DataFrame(
-                    self.completeList[1:], columns=self.completeList[0])
-                print(df)
-                if self.interval in list(df.Interval):
-                    dialog = QMessageBox(self)
-                    dialog.setWindowTitle("Data Present")
-                    dialog.setText(
-                        "Data is already in this interval. If you code data it will overwrite at the end of this interval. If no, then will return to previous interval. Do you want to code?")
-                    dialog.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-                    button = dialog.exec_()
-                    if button == QMessageBox.Yes:
-                        self.replace_flag = True
-                    else:
-                        self.last_time = self.mediaPlayer.position() + (x * self.presses)
-                        self.mediaPlayer.setPosition(
-                            self.mediaPlayer.position() + (x * self.presses))
-                        self.interval += self.presses
-                        self.presses = 0
 
-                self.rev_flag = False
-
-            if (int(self.mediaPlayer.position())) >= 1000 and (self.mediaPlayer.position() >= self.last_time) \
-                    and self.rev_flag == False:
-                # if ((self.mediaPlayer.position() % x) <= 1) | (
-                #     (self.mediaPlayer.position() % x) >= (x - 1)
-                # ):
+            if (int(self.mediaPlayer.position())) >= 1000:
                 if self.mediaPlayer.position() % x == 0:
                     print("The time in the Video is: ",
                           self.mediaPlayer.position())
                     # self.last_time = self.mediaPlayer.position()
                     self.pauseFlag = False
                     self.pause_video()
-                    self.interval += 1
 
                     if self.iskeyPressed:
                         self.frequencyCounter.append(
                             self.mediaPlayer.position() / 1000)
                         self.frequencyCounter.append(self.keyPressed)
-                        # put the flag to reset the lock on other keys here
+                    # put the flag to reset the lock on other keys here
                     self.promptData()
 
     def statusChanged(self):
         print("status changed")
         print(self.mediaPlayer.mediaStatus())
         if self.mediaPlayer.mediaStatus() == 7:
-            self.interval += 1
             self.promptEnd()
 
     def promptEnd(self):
@@ -734,10 +672,33 @@ class video_player(QWidget):
     def promptData(self):
         # popup box for data
         print(self.frequencyCounter)
-        # mode 0 is regular slider interval
-        self.pop_up = popUpTable(self.frequencyCounter, 0)
-
+        check_num = self.mediaPlayer.position() - (self.mediaPlayer.position() %
+                                                   (self.sliderSize * 1000))
+        interval = self.interval_list.index(check_num)
+        print('interval is:', interval)
+        df = pd.DataFrame(self.completeList)
+        print(df)
+        if interval in list(df[3]):
+            dialog = QMessageBox(self)
+            dialog.setWindowTitle("Data Present")
+            dialog.setText(
+                "Data is already in this interval. Do you want to overwrite the data? If yes, redo/save windows will popup. If no, then no window will popup and you can continue")
+            dialog.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            dialog.setModal(False)
+            button = dialog.exec_()
+            if button == QMessageBox.Yes:
+                df.drop(df[df[3] == interval].index, inplace=True)
+                print('df after deletion:', df)
+                self.completeList = df.values.tolist()
+                # mode 0 is regular slider interval
+                self.pop_up = popUpTable(self.frequencyCounter, 0)
+            else:
+                self.frequencyCounter = []
+        else:
+            # mode 0 is regular slider interval
+            self.pop_up = popUpTable(self.frequencyCounter, 0)
     # hotkey for logging
+
     def keyPressEvent(self, e: QKeyEvent):
         pos = self.mediaPlayer.position()
         pos = pos / 1000.0
@@ -779,6 +740,9 @@ class video_player(QWidget):
 
     def keyReleaseEvent(self, e: QKeyEvent):
         pos = self.mediaPlayer.position()
+        bisect.insort(self.interval_list, pos)
+        interval = self.interval_list.index(pos)
+        self.interval_list.pop(interval)
         pos = pos/1000.0
         if self.videoFlag == True:
 
@@ -790,7 +754,7 @@ class video_player(QWidget):
                     self.frequencyCounter.append(self.HK1)
                 self.iskeyPressed = False
                 self.keyPressed = ""
-                self.frequencyCounter.append(self.interval)
+                self.frequencyCounter.append(interval)
                 print(self.frequencyCounter)
 
             elif e.text() == self.HK2 and not e.isAutoRepeat() and self.keyPressed == self.HK2:
@@ -801,7 +765,7 @@ class video_player(QWidget):
                     self.frequencyCounter.append(self.HK2)
                 self.iskeyPressed = False
                 self.keyPressed = ""
-                self.frequencyCounter.append(self.interval)
+                self.frequencyCounter.append(interval)
                 print(self.frequencyCounter)
 
             elif e.text() == self.HK3 and not e.isAutoRepeat() and self.keyPressed == self.HK3:
@@ -812,7 +776,7 @@ class video_player(QWidget):
                     self.frequencyCounter.append(self.HK3)
                 self.iskeyPressed = False
                 self.keyPressed = ""
-                self.frequencyCounter.append(self.interval)
+                self.frequencyCounter.append(interval)
                 print(self.frequencyCounter)
 
             elif e.text() == self.HK4 and not e.isAutoRepeat() and self.keyPressed == self.HK4:
@@ -823,7 +787,7 @@ class video_player(QWidget):
                     self.frequencyCounter.append(self.HK4)
                 self.iskeyPressed = False
                 self.keyPressed = ""
-                self.frequencyCounter.append(self.interval)
+                self.frequencyCounter.append(interval)
                 print(self.frequencyCounter)
 
         elif self.videoFlag == False:
@@ -831,20 +795,12 @@ class video_player(QWidget):
 
     def updateSaveData(self):
         print("Adding this list onto the 2D Final List")
-        if self.replace_flag == True:
-            df = pd.DataFrame(self.completeList)
-            print('before deletion:', df)
-            df.drop(df[df[3] == self.interval-1].index, inplace=True)
-            print('after deletion:', df)
-            self.completeList = df.values.tolist()
-            self.replace_flag = False
+
         if len(self.pop_up._temp) > 0:
             for row in self.pop_up._convertedData:
                 self.completeList.append(row)
         self.frequencyCounter = []
         print('complete list:', self.completeList)
-        self.last_time = self.mediaPlayer.position()
-        print('last time:', self.last_time)
         print('time in video is:', self.mediaPlayer.position())
         self.mediaPlayer.setPosition(self.mediaPlayer.position() + 1)
 
@@ -860,8 +816,6 @@ class video_player(QWidget):
             print("returning to:", self.mediaPlayer.position() -
                   (self.sliderSize * 1000) + 1)
 
-            self.last_time = self.mediaPlayer.position()
-            print("last time is: ", self.last_time)
         elif self.mediaPlayer.position() % x == 1:
             self.mediaPlayer.setPosition(
                 self.mediaPlayer.position() - (self.sliderSize * 1000)
@@ -869,14 +823,6 @@ class video_player(QWidget):
             print("returning to:", self.mediaPlayer.position() -
                   (self.sliderSize * 1000))
 
-            self.last_time = self.mediaPlayer.position()
-            print("last time is: ", self.last_time)
-
-# 10002, 9999
-# 10002 % 10000 = 2, 9999 % 10000 = 9999
-# return_time = position - interval
-# return_time = 10002 - 10000 = 2 or 9999 - 10000 = -1
-        # unlikely time will stop over 2 milliseconds over
         elif self.mediaPlayer.position() % x == 2:
             self.mediaPlayer.setPosition(
                 self.mediaPlayer.position() - (self.sliderSize * 1000) - 1
@@ -884,19 +830,13 @@ class video_player(QWidget):
             print("returning to:", self.mediaPlayer.position() -
                   (self.sliderSize * 1000) - 1)
 
-            self.last_time = self.mediaPlayer.position() - 1
-            print("last time is: ", self.last_time)
-
         else:
-            self.last_time = self.mediaPlayer.position()
+
             self.mediaPlayer.setPosition(
                 self.mediaPlayer.position() - (self.mediaPlayer.position() % x) + 1
             )
             print("returning to:", (self.mediaPlayer.position() -
                   (self.mediaPlayer.position() % x) + 1))
-
-            print("last time is: ", self.last_time)
-        self.interval -= 1
 
     def updateDataAndEnd(self):
         print("Make Window to show complete data and choose to save or not.")
@@ -904,7 +844,7 @@ class video_player(QWidget):
         if len(self.pop_up._temp) > 0:
             for row in self.pop_up._convertedData:
                 self.completeList.append(row)
-        self.finalWindow = FinalTable(self.completeList)
+        self.finalWindow = FinalTable(self.completeList[1:])
 
 
 # popUp class
@@ -1003,6 +943,7 @@ class TableModel(QtCore.QAbstractTableModel):
     def __init__(self, data):
         super(TableModel, self).__init__()
         self._data = data
+        self.headers = ['Time Pressed', 'Time Released', 'Label', 'Interval']
 
     def data(self, index, role):
         if role == Qt.DisplayRole:
@@ -1020,6 +961,11 @@ class TableModel(QtCore.QAbstractTableModel):
         # the length (only works if all rows are an equal length)
         return len(self._data[0])
 
+    def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
+        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+            return self.headers[section]
+        return super().headerData(section, orientation, role)
+
 
 class FinalTable(QWidget):
     def __init__(self, data):
@@ -1027,7 +973,9 @@ class FinalTable(QWidget):
         # data for the file name
         self.data = data
         self.new_data = self.data
-        print(self.new_data)
+        df = pd.DataFrame(self.new_data)
+        df.sort_values(by=0, inplace=True)
+        self.new_data = df.values.tolist()
         self.setWindowTitle("Data")
         self.resize(700, 500)
         self.center()
@@ -1035,13 +983,15 @@ class FinalTable(QWidget):
         self.show()
 
     def init_ui(self):
-
+        self.file_save_name = QLineEdit()
+        self.file_save_name.setText('Enter name of file want to save as')
         self.grid = QVBoxLayout()
         self.buttons = QHBoxLayout()
         self.setLayout(self.grid)
 
         self.saveData = QPushButton()
         self.saveData.setText("Save Data")
+        self.buttons.addWidget(self.file_save_name)
         self.buttons.addWidget(self.saveData)
         self.grid.addLayout(self.buttons)
 
@@ -1059,10 +1009,11 @@ class FinalTable(QWidget):
             self.grid.addWidget(self.listLabel)
 
     def emitSaveSignal(self):
-        self.new_file_name = "Test_file_name.csv"
+        self.new_file_name = self.file_save_name.text() + '.csv'
 
-        df = pd.DataFrame(self.new_data)
-        df.to_csv(self.new_file_name, index=False, header=False)
+        df = pd.DataFrame(self.new_data, columns=[
+                          'Time Pressed', 'Time Released', 'Label', 'Interval'])
+        df.to_csv(self.new_file_name, index=False, header=True)
         self.close()
         window.dialog.close()
 
