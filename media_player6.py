@@ -919,7 +919,11 @@ class popUpTable(QWidget):
         # save signal will tell the video_player window that it needs to save that list to the main list, --> 2d array
         # redo signal will tell the video_player window that it needs to del the list and remake it, also backup the position of the window to slider timer backwards
     def show_table_values(self):
-        model_table_values = TableModel(self._complete_list)
+        df = pd.DataFrame(self._complete_list[1:])
+        if not df.empty:
+            df.sort_values(by=0, inplace=True)
+        data = df.values.tolist()
+        model_table_values = TableModel(data)
         self.tableWidget_values = QTableView()
         self.tableWidget_values.setModel(model_table_values)
         self.tableWidget_values.setWindowTitle('Coded Values')
@@ -988,7 +992,10 @@ class TableModel(QtCore.QAbstractTableModel):
     def columnCount(self, index):
         # The following takes the first sub-list, and returns
         # the length (only works if all rows are an equal length)
-        return len(self._data[0])
+        try:
+            return len(self._data[0])
+        except:
+            return 0
 
     def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
