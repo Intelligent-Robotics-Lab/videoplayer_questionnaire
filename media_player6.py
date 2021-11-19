@@ -31,7 +31,7 @@ from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl
 import os
-from numpy import e
+from numpy import VisibleDeprecationWarning, e
 import pandas as pd
 import bisect
 
@@ -556,13 +556,18 @@ class video_player(QWidget):
         self.positionSlider.setRange(0, 0)
         self.positionSlider.sliderMoved.connect(self.setPosition)
 
+        self.interval_label = QLabel()
+        vboxLayout_labels = QVBoxLayout()
+        vboxLayout_labels.addWidget(self.label)
+        vboxLayout_labels.addWidget(self.interval_label)
         # create hbox layout
         hboxLayout = QHBoxLayout()
         hboxLayout.setContentsMargins(0, 0, 0, 0)
 
         # set widgets to the hbox layout
 
-        hboxLayout.addWidget(self.label)
+        # hboxLayout.addWidget(self.label)
+        hboxLayout.addLayout(vboxLayout_labels)
         hboxLayout.addWidget(self.positionSlider)
         hboxLayout.addWidget(playBtn)
         hboxLayout.addWidget(pauseBtn)
@@ -595,6 +600,8 @@ class video_player(QWidget):
         for i in range(0, duration, self.sliderSize*1000):
             self.interval_list.append(i)
         self.interval_list.append(duration)
+        self.interval_label.setText(
+            'Interval:' + '0/' + str(len(self.interval_list)-1))
         print(self.interval_list)
 
     def positionChanged(self, position):
@@ -602,6 +609,12 @@ class video_player(QWidget):
         self.positionSlider.setValue(position)
         self.label.setText(ms_fix(position) + '/' +
                            ms_fix(self.mediaPlayer.duration()))
+        internal_int_list = self.interval_list
+        bisect.insort(internal_int_list, position)
+        interval = internal_int_list.index(position)
+        self.interval_label.setText(
+            'Interval:' + str(interval) + '/' + str(len(self.interval_list)-2))
+        internal_int_list.pop(interval)
 
     # Sets the time of the timer
 
@@ -639,8 +652,7 @@ class video_player(QWidget):
         print("Pausing the Video.")
 
     def sliderTimer(self):
-        #print("The time in the Video is: ", self.mediaPlayer.position())
-
+        # print("The time in the Video is: ", self.mediaPlayer.position())
         if self.pauseFlag == True:
             x = self.sliderSize * 1000
 
@@ -670,7 +682,7 @@ class video_player(QWidget):
 
     def promptEnd(self):
         # mode 1 is end of video prompt
-        self.pop_up = popUpTable(self.frequencyCounter, 1)
+        self.pop_up = popUpTable(self.frequencyCounter, 1, self.completeList)
 
     def promptData(self):
         # popup box for data
@@ -694,12 +706,14 @@ class video_player(QWidget):
                 print('df after deletion:', df)
                 self.completeList = df.values.tolist()
                 # mode 0 is regular slider interval
-                self.pop_up = popUpTable(self.frequencyCounter, 0)
+                self.pop_up = popUpTable(
+                    self.frequencyCounter, 0, self.completeList)
             else:
                 self.frequencyCounter = []
         else:
             # mode 0 is regular slider interval
-            self.pop_up = popUpTable(self.frequencyCounter, 0)
+            self.pop_up = popUpTable(
+                self.frequencyCounter, 0, self.completeList)
     # hotkey for logging
 
     def keyPressEvent(self, e: QKeyEvent):
@@ -852,7 +866,7 @@ class video_player(QWidget):
 
 # popUp class
 class popUpTable(QWidget):
-    def __init__(self, data, mode):  # data param is the frequencycounter list
+    def __init__(self, data, mode, complete_list):  # data param is the frequencycounter list
         super().__init__()
         self.mode = mode
         # data for the file name
@@ -861,6 +875,7 @@ class popUpTable(QWidget):
         # Have to rebuild the list because python variables only act as labels rather than C/Java variables
         self._temp = self.buildList(data)
         self._convertedData = self.convertTo2DArray(self._data)
+        self._complete_list = complete_list
         print('converted data:', self._convertedData)
         self.setWindowTitle("Data")
         self.resize(700, 500)
@@ -876,14 +891,18 @@ class popUpTable(QWidget):
 
         self.redoData = QPushButton()
         self.saveData = QPushButton()
+        self.show_complete_table = QPushButton()
         self.redoData.setText("Redo Data")
         self.saveData.setText("Save Data")
+        self.show_complete_table.setText("Show All Coded Values")
         self.buttons.addWidget(self.redoData)
         self.buttons.addWidget(self.saveData)
+        self.buttons.addWidget(self.show_complete_table)
         self.grid.addLayout(self.buttons)
 
         self.redoData.clicked.connect(self.emitRedoSignal)
         self.saveData.clicked.connect(self.emitSaveSignal)
+        self.show_complete_table.clicked.connect(self.show_table_values)
 
         if self._convertedData:
             self.tableWidget = QTableView()
@@ -899,6 +918,13 @@ class popUpTable(QWidget):
         # define two signals that are emitted when save/redo is pressed
         # save signal will tell the video_player window that it needs to save that list to the main list, --> 2d array
         # redo signal will tell the video_player window that it needs to del the list and remake it, also backup the position of the window to slider timer backwards
+    def show_table_values(self):
+        model_table_values = TableModel(self._complete_list)
+        self.tableWidget_values = QTableView()
+        self.tableWidget_values.setModel(model_table_values)
+        self.tableWidget_values.setWindowTitle('Coded Values')
+        self.tableWidget_values.resize(600, 600)
+        self.tableWidget_values.show()
 
     def emitSaveSignal(self):
         if self.mode == 0:
@@ -1015,7 +1041,7 @@ class FinalTable(QWidget):
         self.new_file_name = self.file_save_name.text() + '.csv'
 
         df = pd.DataFrame(self.new_data, columns=[
-                          'Time Pressed', 'Time Released', 'Label', 'Interval'])
+            'Time Pressed', 'Time Released', 'Label', 'Interval'])
         df.to_csv(self.new_file_name, index=False, header=True)
         self.close()
         window.dialog.close()
