@@ -1003,7 +1003,8 @@ class FinalTable(QWidget):
         self.data = data
         self.new_data = self.data
         df = pd.DataFrame(self.new_data)
-        df.sort_values(by=0, inplace=True)
+        if not df.empty:
+            df.sort_values(by=0, inplace=True)
         self.new_data = df.values.tolist()
         self.setWindowTitle("Data")
         self.resize(700, 500)
