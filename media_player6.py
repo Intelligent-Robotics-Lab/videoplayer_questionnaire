@@ -656,6 +656,9 @@ class video_player(QWidget):
                         self.frequencyCounter.append(
                             self.mediaPlayer.position() / 1000)
                         self.frequencyCounter.append(self.keyPressed)
+                        self.frequencyCounter.append(
+                            self.interval_list.index(self.mediaPlayer.position()))
+                        self.iskeyPressed = False
                     # put the flag to reset the lock on other keys here
                     self.promptData()
 
