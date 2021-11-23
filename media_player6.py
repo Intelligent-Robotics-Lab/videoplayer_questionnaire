@@ -2,6 +2,7 @@ import sys
 from typing import Sized
 from PyQt5.QtWidgets import (
     QComboBox,
+    QErrorMessage,
     QHBoxLayout,
     QApplication,
     QButtonGroup,
@@ -862,6 +863,7 @@ class video_player(QWidget):
             for row in self.pop_up._convertedData:
                 self.completeList.append(row)
         self.finalWindow = FinalTable(self.completeList[1:])
+        self.frequencyCounter = []
 
 
 # popUp class
@@ -1022,17 +1024,22 @@ class FinalTable(QWidget):
     def init_ui(self):
         self.file_save_name = QLineEdit()
         self.file_save_name.setText('Enter name of file want to save as')
+        self.folder_save_name = QLineEdit('Folder save directory')
         self.grid = QVBoxLayout()
         self.buttons = QHBoxLayout()
         self.setLayout(self.grid)
 
+        self.browse_folder = QPushButton('Browse')
         self.saveData = QPushButton()
         self.saveData.setText("Save Data")
         self.buttons.addWidget(self.file_save_name)
+        self.buttons.addWidget(self.folder_save_name)
+        self.buttons.addWidget(self.browse_folder)
         self.buttons.addWidget(self.saveData)
         self.grid.addLayout(self.buttons)
 
         self.saveData.clicked.connect(self.emitSaveSignal)
+        self.browse_folder.clicked.connect(self.save_folder)
 
         if self.new_data:
             self.tableWidget = QTableView()
@@ -1045,14 +1052,31 @@ class FinalTable(QWidget):
             self.listLabel.setText(str(self.data))
             self.grid.addWidget(self.listLabel)
 
+    def save_folder(self):
+        try:
+            dirName = str(QFileDialog.getExistingDirectory(
+                self, 'Select Directory', options=QFileDialog.DontUseNativeDialog))
+            if dirName:
+                self.folder_save_name.setText(dirName)
+        except:
+            error_dialog = QErrorMessage()
+            error_dialog.showMessage('Not valid directory')
+            error_dialog.exec_()
+
     def emitSaveSignal(self):
         self.new_file_name = self.file_save_name.text() + '.csv'
-
+        print(self.folder_save_name.text() + '/' + self.new_file_name)
         df = pd.DataFrame(self.new_data, columns=[
             'Time Pressed', 'Time Released', 'Label', 'Interval'])
-        df.to_csv(self.new_file_name, index=False, header=True)
-        self.close()
-        window.dialog.close()
+        try:
+            df.to_csv(self.folder_save_name.text() + '/' + self.new_file_name,
+                      index=False, header=True)
+            self.close()
+            window.dialog.close()
+        except:
+            error_dialog = QErrorMessage()
+            error_dialog.showMessage('Invalid save name')
+            error_dialog.exec_()
 
     def buildList(self, x):
         newList = []
