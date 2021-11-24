@@ -36,12 +36,8 @@ from numpy import VisibleDeprecationWarning, e
 import pandas as pd
 import bisect
 
-<<<<<<< HEAD
-# yessir
 
-=======
 # lel
->>>>>>> cda44fccad7f724fd1d2f7edbb60787ebaffe4c9
 # helper function ms to minutes:seconds
 # test comment for madeline
 
