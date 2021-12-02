@@ -36,14 +36,10 @@ from numpy import VisibleDeprecationWarning, e
 import pandas as pd
 import bisect
 
-<<<<<<< HEAD
-# yessir
-
-=======
 # lel
->>>>>>> cda44fccad7f724fd1d2f7edbb60787ebaffe4c9
 # helper function ms to minutes:seconds
 # test comment for madeline
+
 
 def ms_fix(ms):
     seconds = (ms / 1000) % 60
@@ -590,8 +586,6 @@ class video_player(QWidget):
 
         self.mediaPlayer.setVideoOutput(videowidget)
 
-        self.mediaPlayer.mediaStatusChanged.connect(self.statusChanged)
-
         self.mediaPlayer.positionChanged.connect(self.positionChanged)
 
         self.mediaPlayer.durationChanged.connect(self.interval_calc)
@@ -659,7 +653,18 @@ class video_player(QWidget):
 
     def sliderTimer(self):
         # print("The time in the Video is: ", self.mediaPlayer.position())
-        if self.pauseFlag == True:
+        # If video is at end then promptEnd, removed statusChanged function
+        if self.mediaPlayer.mediaStatus() == 7:
+            if self.iskeyPressed:
+                self.frequencyCounter.append(
+                    self.mediaPlayer.position() / 1000)
+                self.frequencyCounter.append(self.keyPressed)
+                self.frequencyCounter.append(
+                    self.interval_list.index(self.mediaPlayer.position()))
+                self.iskeyPressed = False
+            self.promptEnd()
+
+        elif self.pauseFlag == True:
             x = self.sliderSize * 1000
 
             if (int(self.mediaPlayer.position())) >= 1000:
@@ -679,12 +684,6 @@ class video_player(QWidget):
                         self.iskeyPressed = False
                     # put the flag to reset the lock on other keys here
                     self.promptData()
-
-    def statusChanged(self):
-        print("status changed")
-        print(self.mediaPlayer.mediaStatus())
-        if self.mediaPlayer.mediaStatus() == 7:
-            self.promptEnd()
 
     def promptEnd(self):
         # mode 1 is end of video prompt
