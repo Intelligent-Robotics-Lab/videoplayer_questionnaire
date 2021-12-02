@@ -670,9 +670,6 @@ class video_player(QWidget):
 
             if (int(self.mediaPlayer.position())) >= 1000:
                 if self.mediaPlayer.position() % x == 0:
-                    print("The time in the Video is: ",
-                          self.mediaPlayer.position())
-                    # self.last_time = self.mediaPlayer.position()
                     self.pauseFlag = False
                     self.pause_video()
 
@@ -680,8 +677,14 @@ class video_player(QWidget):
                         self.frequencyCounter.append(
                             self.mediaPlayer.position() / 1000)
                         self.frequencyCounter.append(self.keyPressed)
-                        self.frequencyCounter.append(
-                            self.interval_list.index(self.mediaPlayer.position()))
+                        if self.mediaPlayer.position() % x == 1:
+                            self.frequencyCounter.append(
+                                self.interval_list.index(self.mediaPlayer.position()-1))
+                            self.mediaPlayer.setPosition(
+                                self.mediaPlayer.position() - 1)
+                        else:
+                            self.frequencyCounter.append(
+                                self.interval_list.index(self.mediaPlayer.position()))
                         self.iskeyPressed = False
                     # put the flag to reset the lock on other keys here
                     self.promptData()
