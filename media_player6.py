@@ -555,6 +555,10 @@ class video_player(QWidget):
         pauseBtn.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         pauseBtn.clicked.connect(self.pause_video)
 
+        save_button = QPushButton("Save Data")
+        save_button.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+        save_button.clicked.connect(self.save_data)
+
         self.positionSlider = QSlider(Qt.Horizontal)
         self.positionSlider.setRange(0, 0)
         self.positionSlider.sliderMoved.connect(self.setPosition)
@@ -574,6 +578,7 @@ class video_player(QWidget):
         hboxLayout.addWidget(self.positionSlider)
         hboxLayout.addWidget(playBtn)
         hboxLayout.addWidget(pauseBtn)
+        hboxLayout.addWidget(save_button)
 
         # create vbox layout
         vboxLayout = QVBoxLayout()
@@ -592,6 +597,16 @@ class video_player(QWidget):
         self.mediaPlayer.durationChanged.connect(self.interval_calc)
 
         self.mediaPlayer.durationChanged.connect(self.durationChanged)
+
+    def save_data(self):
+        try:
+            cwd = os.getcwd() + '\\' + 'saved_data.csv'
+            df = pd.DataFrame(
+                self.completeList[1:], columns=self.completeList[0])
+            df.to_csv(cwd, index=False, header=True)
+            print(df)
+        except:
+            print('error')
 
     # changes duration of content to duration param
     def durationChanged(self, duration):
@@ -830,13 +845,13 @@ class video_player(QWidget):
         print('time in video is:', self.mediaPlayer.position())
         self.mediaPlayer.setPosition(self.mediaPlayer.position() + 1)
 
-    def updateRedoData(self):
+    def updateRedoData(self, num_int):
         print("Deleting data and moving position back to before this run through.")
         self.frequencyCounter = []
         x = self.sliderSize * 1000
         if self.mediaPlayer.position() % x == 0:
             self.mediaPlayer.setPosition(
-                self.mediaPlayer.position() - (self.sliderSize * 1000) + 1
+                self.mediaPlayer.position() - (num_int * self.sliderSize * 1000) + 1
             )
 
             print("returning to:", self.mediaPlayer.position() -
@@ -844,14 +859,14 @@ class video_player(QWidget):
 
         elif self.mediaPlayer.position() % x == 1:
             self.mediaPlayer.setPosition(
-                self.mediaPlayer.position() - (self.sliderSize * 1000)
+                self.mediaPlayer.position() - (num_int * self.sliderSize * 1000)
             )
             print("returning to:", self.mediaPlayer.position() -
                   (self.sliderSize * 1000))
 
         elif self.mediaPlayer.position() % x == 2:
             self.mediaPlayer.setPosition(
-                self.mediaPlayer.position() - (self.sliderSize * 1000) - 1
+                self.mediaPlayer.position() - (num_int * self.sliderSize * 1000) - 1
             )
             print("returning to:", self.mediaPlayer.position() -
                   (self.sliderSize * 1000) - 1)
@@ -859,10 +874,10 @@ class video_player(QWidget):
         else:
 
             self.mediaPlayer.setPosition(
-                self.mediaPlayer.position() - (self.mediaPlayer.position() % x) + 1
+                self.mediaPlayer.position() - (num_int * self.mediaPlayer.position() % x) + 1
             )
             print("returning to:", (self.mediaPlayer.position() -
-                  (self.mediaPlayer.position() % x) + 1))
+                                    (self.mediaPlayer.position() % x) + 1))
 
     def updateDataAndEnd(self):
         print("Make Window to show complete data and choose to save or not.")
@@ -902,10 +917,13 @@ class popUpTable(QWidget):
         self.redoData = QPushButton()
         self.saveData = QPushButton()
         self.show_complete_table = QPushButton()
+        self.rev_text_box = QLineEdit()
         self.redoData.setText("Redo Data")
+        self.rev_text_box.setText("Enter how many intervals want to go back")
         self.saveData.setText("Save Data")
         self.show_complete_table.setText("Show All Coded Values")
         self.buttons.addWidget(self.redoData)
+        self.buttons.addWidget(self.rev_text_box)
         self.buttons.addWidget(self.saveData)
         self.buttons.addWidget(self.show_complete_table)
         self.grid.addLayout(self.buttons)
@@ -951,8 +969,14 @@ class popUpTable(QWidget):
             self.close()
 
     def emitRedoSignal(self):
-        window.dialog.updateRedoData()
-        self.close()
+        try:
+            num_int = int(self.rev_text_box.text())
+            window.dialog.updateRedoData(num_int)
+            self.close()
+        except ValueError:
+            error_dialog = QErrorMessage()
+            error_dialog.showMessage('Not valid number, please try again')
+            error_dialog.exec_()
 
     def buildList(self, x):
         newList = []
