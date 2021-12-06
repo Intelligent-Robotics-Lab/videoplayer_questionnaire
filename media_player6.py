@@ -72,11 +72,8 @@ class media_player(QWidget):
         self.sliderEdit = QLineEdit()
         self.fileSelect = QPushButton()
         self.nextPage = QPushButton()
-        self.cModes = QComboBox()
-        self.cLabels = QComboBox()
+        self.cMetrics = QComboBox()
         self.hotKey = QPushButton("HotKey Setup")
-        self.addBtn = QPushButton("Add")
-        self.delBtn = QPushButton("Del")
         self.sliderLabel = QLabel()
 
         # Setting up file dialog
@@ -105,7 +102,7 @@ class media_player(QWidget):
         self.Ltext4 = ""
 
         # update combo textbox on open
-        self.ComboTextRead()
+        # self.ComboTextRead()
 
         # calling next frame
         self.frame1()
@@ -116,14 +113,14 @@ class media_player(QWidget):
         outer_layout = QHBoxLayout()
         top_layout = QHBoxLayout()
         modes_hotkeys = QHBoxLayout()
-        labels_layout = QHBoxLayout()
         self.setLayout(grid)
 
-        # setting modes combo boxe up
-        self.cModes.addItem("Modes")
-        self.cModes.addItem("Duration")
-        self.cModes.addItem("Frequency")
-        self.cModes.addItem("Partial Time interval")
+        # Adding labels
+        self.cMetrics.addItem("Engagement")
+        self.cMetrics.addItem("Affect")
+        self.cMetrics.addItem("Communication")
+        self.cMetrics.addItem("Compliance")
+        self.cMetrics.addItem("Performance")
 
         # setup slider
         self.slider.setOrientation(Qt.Horizontal)
@@ -143,21 +140,15 @@ class media_player(QWidget):
         # setting up cursor hover
         self.fileSelect.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         self.nextPage.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-        self.cModes.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-        self.cLabels.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-        self.addBtn.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-        self.delBtn.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+        self.cMetrics.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         self.hotKey.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
 
         # adding widgets to layouts for grid
         outer_layout.addWidget(self.txtBox)
         outer_layout.addWidget(self.fileSelect)
-        labels_layout.addWidget(self.cLabels)
-        labels_layout.addWidget(self.addBtn)
-        labels_layout.addWidget(self.delBtn)
 
         # modes and hotkey layout
-        modes_hotkeys.addWidget(self.cModes)
+        modes_hotkeys.addWidget(self.cMetrics)
         modes_hotkeys.addWidget(self.hotKey)
 
         # slider layout
@@ -167,7 +158,6 @@ class media_player(QWidget):
 
         # adding grid layouts
         grid.addLayout(modes_hotkeys)
-        grid.addLayout(labels_layout)
         grid.addLayout(outer_layout)
         grid.addLayout(top_layout)
 
@@ -185,12 +175,6 @@ class media_player(QWidget):
 
         # showing hotkey window on press
         self.hotKey.clicked.connect(self.on_hotkey_clicked)
-
-        # connecting input dialog box
-        self.addBtn.clicked.connect(self.inputBoxes)
-
-        # showing removeWindow on press
-        self.delBtn.clicked.connect(self.on_del_clicked)
 
     # slider value
     def changeInValue(self):
@@ -221,132 +205,17 @@ class media_player(QWidget):
         print(self.Ltext1)
 
     # function to swap pages, brings up media player
+
     def on_continue_clicked(self):
 
         self.dialog = video_player(self.data, self.slider.value(), self.defaultHK1, self.defaultHK2,
-                                   self.defaultHK3, self.defaultHK4, self.Ltext1, self.Ltext2, self.Ltext3, self.Ltext4, self.behavior)
+                                   self.defaultHK3, self.defaultHK4, self.Ltext1, self.Ltext2, self.Ltext3, self.Ltext4, self.behavior, str(self.cMetrics.currentText()))
 
         self.dialog.show()
 
     # pass to hotey setting class
     def on_hotkey_clicked(self):
         self.valueHK.show()
-
-    def on_del_clicked(self):
-        self.removeCaller = removeWindow(self.comboList)
-        self.comboList = []
-        self.removeCaller.show()
-
-    def closeLine(self):
-        self.ComboTextRead()
-
-    def removeLine(self, removeVal):
-        self.RemoveVal = removeVal
-
-        with open("comboFile.txt", "r") as input:
-            with open("tempFile.txt", "w") as output:
-                # iterate all lines from file
-                for line in input:
-                    # if text matches then don't write it
-                    if line.strip("\n") != self.RemoveVal:
-                        output.write(line)
-
-        # replace file with original name
-        os.replace("tempFile.txt", "comboFile.txt")
-        self.ComboTextRead()
-
-    # Writing to text file and updating clabel on add
-    def inputBoxes(self):
-        self.text, addingInput = QInputDialog.getText(
-            self, "Get text", "New behavior:")
-
-        if self.text:
-            TempText1 = open("comboFile.txt", "a")
-
-            self.textFixed = self.text.strip("\n")
-            TempText1.write(self.text + "\n")
-
-            self.comboList.append(self.textFixed)
-            TempText1.close()
-            self.cLabels.addItem(self.textFixed)
-
-    # Reading the file to populate clabel
-    def ComboTextRead(self):
-
-        TempText1 = open("comboFile.txt", "r").readlines()
-        self.cLabels.clear()
-
-        for line in TempText1:
-            textFixed = line.strip("\n")
-            self.cLabels.addItem(textFixed)
-            self.comboList.append(textFixed)
-
-
-class removeWindow(QWidget):
-    def __init__(self, comboBox):
-
-        super().__init__()
-
-        self.setWindowTitle("Remove Window")
-        self.setGeometry(100, 100, 250, 100)
-
-        self.comboList = comboBox
-        print(self.comboList)
-
-        self.init_ui()
-
-    def init_ui(self):
-        # creating layouts
-        coreLayout = QVBoxLayout()
-        removeLabelLayout = QHBoxLayout()
-        comboBoxLayout = QHBoxLayout()
-        confirmLayout = QHBoxLayout()
-
-        # setting layouts
-        coreLayout.addLayout(removeLabelLayout)
-        coreLayout.addLayout(comboBoxLayout)
-        coreLayout.addLayout(confirmLayout)
-        self.setLayout(coreLayout)
-
-        # creating widgets and adding to correct layout
-        self.coreInfo = QLabel()
-        self.comboInfo = QComboBox()
-        self.cancelBtn = QPushButton()
-        self.contBtn = QPushButton()
-
-        removeLabelLayout.addWidget(self.coreInfo)
-        comboBoxLayout.addWidget(self.comboInfo)
-        confirmLayout.addWidget(self.cancelBtn)
-        confirmLayout.addWidget(self.contBtn)
-
-        # setting txt for widget
-        self.cancelBtn.setText("Cancel")
-        self.contBtn.setText("Save and Continue")
-
-        # setting text for Qlabel
-        self.coreInfo.setText(
-            "Select the behavior to remove and then press continue.")
-
-        # populates list
-        for x in self.comboList:
-            self.comboInfo.addItem(x)
-
-        # when clicked close
-        self.cancelBtn.clicked.connect(self.on_click_cancel)
-
-        # when clicked update info close
-        self.contBtn.clicked.connect(self.on_click_save)
-
-    def on_click_cancel(self):
-        window.closeLine()
-        self.close()
-
-    def on_click_save(self):
-
-        self.removeValue = self.comboInfo.currentText()
-        window.removeLine(self.removeValue)
-        print(self.comboList)
-        self.close()
 
 
 class hotKeyBinding(QWidget):
@@ -483,9 +352,11 @@ class hotKeyBinding(QWidget):
 
 # start of video player class
 class video_player(QWidget):
-    def __init__(self, data, sliderSize, hk1, hk2, hk3, hk4, L1, L2, L3, L4, behavior):
+    def __init__(self, data, sliderSize, hk1, hk2, hk3, hk4, L1, L2, L3, L4, behavior, metric):
         super().__init__()
 
+        # sets the label
+        self.metric = metric
         # data for the file name
         self.data = data
         self.behavior = behavior
@@ -601,12 +472,17 @@ class video_player(QWidget):
     def save_data(self):
         try:
             cwd = os.getcwd() + '\\' + 'saved_data.csv'
+            print(cwd)
             df = pd.DataFrame(
                 self.completeList[1:], columns=self.completeList[0])
             df.to_csv(cwd, index=False, header=True)
             print(df)
         except:
+            error_dialog = QErrorMessage()
+            error_dialog.showMessage('Problem saving, try again please')
+            error_dialog.exec_()
             print('error')
+
 
     # changes duration of content to duration param
     def durationChanged(self, duration):
@@ -618,7 +494,7 @@ class video_player(QWidget):
         self.interval_list.append(duration)
         self.interval_label.setText(
             'Interval:' + '0/' + str(len(self.interval_list)-1))
-        print(self.interval_list)
+        # print(len(self.interval_list))
 
     def positionChanged(self, position):
         # Time is in milliseconds
@@ -836,7 +712,8 @@ class video_player(QWidget):
 
     def updateSaveData(self):
         print("Adding this list onto the 2D Final List")
-
+        # self.pop_up.temp contains self.frequency coutner
+        # only if frequecycounter isn't empty do this
         if len(self.pop_up._temp) > 0:
             for row in self.pop_up._convertedData:
                 self.completeList.append(row)
@@ -885,7 +762,8 @@ class video_player(QWidget):
         if len(self.pop_up._temp) > 0:
             for row in self.pop_up._convertedData:
                 self.completeList.append(row)
-        self.finalWindow = FinalTable(self.completeList[1:])
+        self.finalWindow = FinalTable(
+            self.completeList[1:], self.metric, self.interval_list)
         self.frequencyCounter = []
 
 
@@ -949,7 +827,7 @@ class popUpTable(QWidget):
     def show_table_values(self):
         df = pd.DataFrame(self._complete_list[1:])
         if not df.empty:
-            df.sort_values(by=0, inplace=True)
+            df.sort_values(by=3, inplace=True)
         data = df.values.tolist()
         model_table_values = TableModel(data)
         self.tableWidget_values = QTableView()
@@ -1007,10 +885,21 @@ class popUpTable(QWidget):
 
 
 class TableModel(QtCore.QAbstractTableModel):
-    def __init__(self, data):
+    def __init__(self, data, *args):
         super(TableModel, self).__init__()
         self._data = data
-        self.headers = ['Time Pressed', 'Time Released', 'Label', 'Interval']
+        self.headers = ['Time Pressed', 'Time Released',
+                        'Label', 'Interval']
+        for arg in args:
+            if arg == 'Engagement' or arg == 'Affect':
+                self.headers = ['Time Pressed', 'Time Released', 'Label',
+                                'Interval', 'Label Name', 'Frequency', 'Percentage', 'Total Intervals']
+            elif arg == 'Communication' or arg == 'Performance':
+                self.headers = ['Time Pressed', 'Time Released',
+                                'Label', 'Interval', 'Label Name', 'Frequency', 'Total Intervals']
+            else:
+                self.headers = ['Time Pressed', 'Time Released',
+                                'Label', 'Interval', 'Total Intervals']
 
     def data(self, index, role):
         if role == Qt.DisplayRole:
@@ -1038,15 +927,92 @@ class TableModel(QtCore.QAbstractTableModel):
 
 
 class FinalTable(QWidget):
-    def __init__(self, data):
+    def __init__(self, data, metric, interval_list):
         super().__init__()
+        # instance variable to store metric (ex: engagement, performance)
+        self.metric = metric
+        # instance variable to store interval list
+        self.interval_list = interval_list
+        # instance variable to store number of intervals
+        self.num_intervals = len(self.interval_list) - 1
         # data for the file name
         self.data = data
         self.new_data = self.data
         df = pd.DataFrame(self.new_data)
         if not df.empty:
             df.sort_values(by=0, inplace=True)
-        self.new_data = df.values.tolist()
+         # If metric is engagement
+         # col 1 = time pressed, col 2 = time released, col 3 = label, col 4 = interval
+         # Final dataframe should not be empty, but if it is, fix this conditional to fill neutral or offtarget for all intervals
+        if (self.metric == 'Engagement' or self.metric == 'Affect') and not df.empty:
+            # Get a list of all intervals that have been quantified
+            quant_intervals = list(df[3].unique())
+            # Create list of intervals that haven't been quantified
+            not_quant_intervals = [x for x in range(1,
+                                                    self.num_intervals+1) if x not in quant_intervals]
+            for interval in not_quant_intervals:
+                # Add Off target label row for intervals not quantified
+                # variable for starting value of interval
+                interval_start = (
+                    self.interval_list[interval-1] / 1000) + 0.001
+                # variable for ending value of interval
+                interval_end = (self.interval_list[interval] / 1000)
+                if self.metric == 'Engagement':
+                    df.loc[len(df.index)] = [interval_start,
+                                             interval_end, 'Off Target', interval]
+                else:  # if metric is affect instead of engagement add this row
+                    df.loc[len(df.index)] = [interval_start,
+                                             interval_end, 'Neutral', interval]
+            # Sort dataframe by time pressed
+            df.sort_values(by=0, inplace=True)
+
+            # Add Frequency and percentage values for Engagement and affect
+            # Gets Label and Interval Columns
+            df_filtered = df[df.columns[2:4]].copy(deep=True)
+            # Checks for unique label interval combos
+            df_filtered.drop_duplicates(inplace=True)
+            # Converts pandas series of unique combos into a dataframe
+            df_filtered = (df_filtered[df_filtered.columns[0]
+                                       ].value_counts().to_frame().reset_index())
+            # Rename the columns
+            df_filtered.rename(columns={'index': 'Label Name',
+                                        2: 'Frequency'}, inplace=True)
+            # Create Percentage column
+            df_filtered['Percentage'] = round(
+                df_filtered['Frequency'] / self.num_intervals, 3)
+            # Add dataframe with data analysis to the right of the raw data, fill Na with empty strings ""
+            # Reset the index of df
+            df.reset_index(inplace=True, drop=True)
+            df_final = pd.concat([df, df_filtered], axis=1)
+            df_final.fillna("", inplace=True)
+            # Add total number of intervals column
+            df_final['Total Intervals'] = self.num_intervals
+            df_final.loc[1:, 'Total Intervals'] = ''
+            self.new_data = df_final.values.tolist()
+        # If metric is communication or perfomance just do frequency
+        elif (self.metric == 'Communication' or self.metric == 'Performance') and not df.empty:
+            # Get the count of each label in the label column
+            df_freq_dict = dict(df[2].value_counts())
+            # Create dataframe of unique labels and their counts
+            df_values = pd.DataFrame.from_dict(df_freq_dict, orient='index')
+            # Reset the index (puts labels as first column)
+            df_values.reset_index(level=0, inplace=True)
+            # Renames the columns
+            df_values.rename(
+                columns={'index': 'Label Name', 0: 'Frequency'}, inplace=True)
+            # Final dataframe that will be passed as self.new_data
+            df_final = pd.concat([df, df_values], axis=1)
+            df_final.fillna("", inplace=True)
+            df_final.sort_values(by=0, inplace=True)
+            # Add total number of intervals column
+            df_final['Total Intervals'] = self.num_intervals
+            df_final.loc[1:, 'Total Intervals'] = ''
+            self.new_data = df_final.values.tolist()
+        else:  # This is for compliance
+            df['Total Intervals'] = self.num_intervals
+            df.loc[1:, 'Total Intervals'] = ''
+            self.new_data = df.values.tolist()
+
         self.setWindowTitle("Data")
         self.resize(700, 500)
         self.center()
@@ -1075,7 +1041,7 @@ class FinalTable(QWidget):
 
         if self.new_data:
             self.tableWidget = QTableView()
-            self.model_2 = TableModel(self.new_data)
+            self.model_2 = TableModel(self.new_data, self.metric)
             self.tableWidget.setModel(self.model_2)
             self.grid.addWidget(self.tableWidget)
 
@@ -1098,8 +1064,16 @@ class FinalTable(QWidget):
     def emitSaveSignal(self):
         self.new_file_name = self.file_save_name.text() + '.csv'
         print(self.folder_save_name.text() + '/' + self.new_file_name)
-        df = pd.DataFrame(self.new_data, columns=[
-            'Time Pressed', 'Time Released', 'Label', 'Interval'])
+        if self.metric == 'Engagement' or self.metric == 'Affect':
+            df = pd.DataFrame(self.new_data, columns=['Time Pressed', 'Time Released', 'Label',
+                                                      'Interval', 'Label Name', 'Frequency', 'Percentage', 'Total Intervals'])
+        elif self.metric == 'Communication' or self.metric == 'Performance':
+            df = pd.DataFrame(self.new_data, columns=[
+                              'Time Pressed', 'Time Released', 'Label', 'Interval', 'Label Name', 'Frequency', 'Total Intervals'])
+        else:
+            df = pd.DataFrame(self.new_data, columns=[
+                              'Time Pressed', 'Time Released', 'Label', 'Interval', 'Total Intervals'])
+
         try:
             df.to_csv(self.folder_save_name.text() + '/' + self.new_file_name,
                       index=False, header=True)
