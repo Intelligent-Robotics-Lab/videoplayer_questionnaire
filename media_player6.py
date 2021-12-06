@@ -357,7 +357,6 @@ class video_player(QWidget):
 
         # sets the label
         self.metric = metric
-
         # data for the file name
         self.data = data
         self.behavior = behavior
@@ -884,10 +883,21 @@ class popUpTable(QWidget):
 
 
 class TableModel(QtCore.QAbstractTableModel):
-    def __init__(self, data):
+    def __init__(self, data, *args):
         super(TableModel, self).__init__()
         self._data = data
-        self.headers = ['Time Pressed', 'Time Released', 'Label', 'Interval']
+        self.headers = ['Time Pressed', 'Time Released',
+                        'Label', 'Interval']
+        for arg in args:
+            if arg == 'Engagement' or arg == 'Affect':
+                self.headers = ['Time Pressed', 'Time Released', 'Label',
+                                'Interval', 'Label Name', 'Frequency', 'Percentage', 'Total Intervals']
+            elif arg == 'Communication' or arg == 'Performance':
+                self.headers = ['Time Pressed', 'Time Released',
+                                'Label', 'Interval', 'Label Name', 'Frequency', 'Total Intervals']
+            else:
+                self.headers = ['Time Pressed', 'Time Released',
+                                'Label', 'Interval', 'Total Intervals']
 
     def data(self, index, role):
         if role == Qt.DisplayRole:
@@ -943,7 +953,7 @@ class FinalTable(QWidget):
                 # variable for starting value of interval
                 interval_start = (
                     self.interval_list[interval-1] / 1000) + 0.001
-                # variable fro ending value of interval
+                # variable for ending value of interval
                 interval_end = (self.interval_list[interval] / 1000)
                 if self.metric == 'Engagement':
                     df.loc[len(df.index)] = [interval_start,
@@ -954,7 +964,53 @@ class FinalTable(QWidget):
             # Sort dataframe by time pressed
             df.sort_values(by=0, inplace=True)
 
-        self.new_data = df.values.tolist()
+            # Add Frequency and percentage values for Engagement and affect
+            # Gets Label and Interval Columns
+            df_filtered = df[df.columns[2:4]].copy(deep=True)
+            # Checks for unique label interval combos
+            df_filtered.drop_duplicates(inplace=True)
+            # Converts pandas series of unique combos into a dataframe
+            df_filtered = (df_filtered[df_filtered.columns[0]
+                                       ].value_counts().to_frame().reset_index())
+            # Rename the columns
+            df_filtered.rename(columns={'index': 'Label Name',
+                                        2: 'Frequency'}, inplace=True)
+            # Create Percentage column
+            df_filtered['Percentage'] = round(
+                df_filtered['Frequency'] / self.num_intervals, 3)
+            # Add dataframe with data analysis to the right of the raw data, fill Na with empty strings ""
+            # Reset the index of df
+            df.reset_index(inplace=True, drop=True)
+            df_final = pd.concat([df, df_filtered], axis=1)
+            df_final.fillna("", inplace=True)
+            # Add total number of intervals column
+            df_final['Total Intervals'] = self.num_intervals
+            df_final.loc[1:, 'Total Intervals'] = ''
+            self.new_data = df_final.values.tolist()
+        # If metric is communication or perfomance just do frequency
+        elif (self.metric == 'Communication' or self.metric == 'Performance') and not df.empty:
+            # Get the count of each label in the label column
+            df_freq_dict = dict(df[2].value_counts())
+            # Create dataframe of unique labels and their counts
+            df_values = pd.DataFrame.from_dict(df_freq_dict, orient='index')
+            # Reset the index (puts labels as first column)
+            df_values.reset_index(level=0, inplace=True)
+            # Renames the columns
+            df_values.rename(
+                columns={'index': 'Label Name', 0: 'Frequency'}, inplace=True)
+            # Final dataframe that will be passed as self.new_data
+            df_final = pd.concat([df, df_values], axis=1)
+            df_final.fillna("", inplace=True)
+            df_final.sort_values(by=0, inplace=True)
+            # Add total number of intervals column
+            df_final['Total Intervals'] = self.num_intervals
+            df_final.loc[1:, 'Total Intervals'] = ''
+            self.new_data = df_final.values.tolist()
+        else:  # This is for compliance
+            df['Total Intervals'] = self.num_intervals
+            df.loc[1:, 'Total Intervals'] = ''
+            self.new_data = df.values.tolist()
+
         self.setWindowTitle("Data")
         self.resize(700, 500)
         self.center()
@@ -983,7 +1039,7 @@ class FinalTable(QWidget):
 
         if self.new_data:
             self.tableWidget = QTableView()
-            self.model_2 = TableModel(self.new_data)
+            self.model_2 = TableModel(self.new_data, self.metric)
             self.tableWidget.setModel(self.model_2)
             self.grid.addWidget(self.tableWidget)
 
@@ -1006,8 +1062,16 @@ class FinalTable(QWidget):
     def emitSaveSignal(self):
         self.new_file_name = self.file_save_name.text() + '.csv'
         print(self.folder_save_name.text() + '/' + self.new_file_name)
-        df = pd.DataFrame(self.new_data, columns=[
-            'Time Pressed', 'Time Released', 'Label', 'Interval'])
+        if self.metric == 'Engagement' or self.metric == 'Affect':
+            df = pd.DataFrame(self.new_data, columns=['Time Pressed', 'Time Released', 'Label',
+                                                      'Interval', 'Label Name', 'Frequency', 'Percentage', 'Total Intervals'])
+        elif self.metric == 'Communication' or self.metric == 'Performance':
+            df = pd.DataFrame(self.new_data, columns=[
+                              'Time Pressed', 'Time Released', 'Label', 'Interval', 'Label Name', 'Frequency', 'Total Intervals'])
+        else:
+            df = pd.DataFrame(self.new_data, columns=[
+                              'Time Pressed', 'Time Released', 'Label', 'Interval', 'Total Intervals'])
+
         try:
             df.to_csv(self.folder_save_name.text() + '/' + self.new_file_name,
                       index=False, header=True)
