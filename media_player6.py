@@ -481,6 +481,8 @@ class video_player(QWidget):
             error_dialog = QErrorMessage()
             error_dialog.showMessage('Problem saving, try again please')
             error_dialog.exec_()
+            print('error')
+
 
     # changes duration of content to duration param
     def durationChanged(self, duration):
