@@ -224,6 +224,7 @@ class hotKeyBinding(QWidget):
         super().__init__()
         self.setWindowTitle("Hotkey Settings")
         self.setGeometry(100, 100, 250, 100)
+        self.center()
 
         # default values for hotkeys
         self.HKpass1 = "q"
@@ -298,6 +299,13 @@ class hotKeyBinding(QWidget):
         self.HK2.clicked.connect(self.HK2Clicked)
         self.HK3.clicked.connect(self.HK3Clicked)
         self.HK4.clicked.connect(self.HK4Clicked)
+
+    # Method for centering window
+    def center(self):
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
 
     # sets flag back to -1 and does hotkey setup
     def keyPressEvent(self, event: QEvent):
@@ -483,8 +491,8 @@ class video_player(QWidget):
             error_dialog.exec_()
             print('error')
 
-
     # changes duration of content to duration param
+
     def durationChanged(self, duration):
         self.positionSlider.setRange(0, duration)
 
