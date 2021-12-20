@@ -22,7 +22,10 @@ from PyQt5.QtWidgets import (
     QGridLayout,
     QFileDialog,
     QMessageBox,
-    QDialog
+    QDialog,
+    QInputDialog,
+    QDialogButtonBox,
+    QFormLayout
 )
 from PyQt5.QtCore import pyqtSlot
 from PyQt5 import QtGui, QtCore
@@ -54,7 +57,66 @@ def ms_fix(ms):
         return "{}:{}".format(minutes, seconds)
 
 
+class InputDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.resize(600, 250)
+        self.setWindowTitle("Naming of exported compliance file")
+        self.label_file_name = QLabel("Name of File:")
+        self.file_name = QLineEdit("Enter file name")
+        self.label_dir_name = QLabel("Directory for File:")
+        self.dir_name = QLineEdit("Save folder name")
+        self.file_browse = QPushButton("Browse")
+        buttonBox = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
+
+        layout = QVBoxLayout(self)
+        # Row for file name
+        h_layout_file_name = QHBoxLayout()
+        h_layout_file_name.addWidget(self.label_file_name)
+        h_layout_file_name.addWidget(self.file_name)
+        # Row for directory name
+        h_layout_dir_name = QHBoxLayout()
+        h_layout_dir_name.addWidget(self.label_dir_name)
+        h_layout_dir_name.addWidget(self.dir_name)
+        h_layout_dir_name.addWidget(self.file_browse)
+
+        layout.addLayout(h_layout_file_name)
+        layout.addLayout(h_layout_dir_name)
+        layout.addWidget(buttonBox)
+
+        buttonBox.accepted.connect(self.accept)
+        buttonBox.rejected.connect(self.reject)
+        self.file_browse.clicked.connect(self.find_dir)
+
+    def accept(self):
+        try:
+            df = pd.DataFrame(c_list, columns=[
+                'Time Start', 'Time End', 'Label'])
+            if not df.empty:
+                df.sort_values(by='Time Start', inplace=True)
+            file_name = str(self.dir_name.text()) + '/' + \
+                str(self.file_name.text()) + '.csv'
+            df.to_csv(
+                file_name, index=False, header=True)
+            print(df)
+            self.close()
+        except:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText(
+                "Error saving file. Please check file name or save directory")
+            msg.setWindowTitle("Error")
+            msg.exec_()
+
+    def find_dir(self):
+        dir_name = str(QFileDialog.getExistingDirectory(
+            self, 'Select Directory', options=QFileDialog.DontUseNativeDialog))
+        if dir_name:
+            self.dir_name.setText(dir_name)
 # main window
+
+
 class media_player(QWidget):
     def __init__(self):
         super().__init__()
@@ -103,7 +165,6 @@ class media_player(QWidget):
 
         # update combo textbox on open
         # self.ComboTextRead()
-
         # calling next frame
         self.frame1()
 
@@ -175,6 +236,16 @@ class media_player(QWidget):
 
         # showing hotkey window on press
         self.hotKey.clicked.connect(self.on_hotkey_clicked)
+
+        # Detects when value of combobox is changed
+        self.cMetrics.currentTextChanged.connect(self.changed_text)
+
+    # Change in text of combobox
+    def changed_text(self):
+        if str(self.cMetrics.currentText()) == 'Compliance':
+            self.hotKey.setEnabled(False)
+        else:
+            self.hotKey.setEnabled(True)
 
     # slider value
     def changeInValue(self):
@@ -365,6 +436,9 @@ class video_player(QWidget):
 
         # sets the label
         self.metric = metric
+        # List to hold compliance times pressed and released
+        self.compliance_list = []
+        self.compliance_time_pts = []
         # data for the file name
         self.data = data
         self.behavior = behavior
@@ -438,6 +512,31 @@ class video_player(QWidget):
         save_button.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         save_button.clicked.connect(self.save_data)
 
+        # If compliance is the metric add start compliance and end compliance buttons
+        self.start_comp_button = QPushButton("Start Comp")
+        self.start_comp_button.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+        # When press start comp gets the time of button press
+        self.start_comp_button.setEnabled(False)
+        self.start_comp_button.clicked.connect(self.get_start_time)
+
+        self.end_comp_button = QPushButton("End Comp")
+        self.end_comp_button.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+        # When press end comp button completes data point
+        self.end_comp_button.setEnabled(False)
+        self.end_comp_button.clicked.connect(self.get_end_time)
+
+        # Add show data button for compliance
+        self.show_compliance_data = QPushButton("Show Data")
+        self.show_compliance_data.setCursor(
+            QCursor(QtCore.Qt.PointingHandCursor))
+        self.show_compliance_data.clicked.connect(self.show_comp_data)
+
+        # Add save data button for compliance
+        self.save_compliance_data = QPushButton("Save Data")
+        self.save_compliance_data.setCursor(
+            QCursor(QtCore.Qt.PointingHandCursor))
+        self.save_compliance_data.clicked.connect(self.save_comp_data)
+
         self.positionSlider = QSlider(Qt.Horizontal)
         self.positionSlider.setRange(0, 0)
         self.positionSlider.sliderMoved.connect(self.setPosition)
@@ -448,21 +547,29 @@ class video_player(QWidget):
         vboxLayout_labels.addWidget(self.interval_label)
         # create hbox layout
         hboxLayout = QHBoxLayout()
+        hboxLayout_buttons = QHBoxLayout()
         hboxLayout.setContentsMargins(0, 0, 0, 0)
-
-        # set widgets to the hbox layout
-
-        # hboxLayout.addWidget(self.label)
-        hboxLayout.addLayout(vboxLayout_labels)
-        hboxLayout.addWidget(self.positionSlider)
-        hboxLayout.addWidget(playBtn)
-        hboxLayout.addWidget(pauseBtn)
-        hboxLayout.addWidget(save_button)
 
         # create vbox layout
         vboxLayout = QVBoxLayout()
         vboxLayout.addWidget(videowidget)
-        vboxLayout.addLayout(hboxLayout)
+        hboxLayout.addLayout(vboxLayout_labels)
+        hboxLayout.addWidget(self.positionSlider)
+
+        if self.metric == 'Compliance':
+            hboxLayout_buttons.addWidget(playBtn)
+            hboxLayout_buttons.addWidget(pauseBtn)
+            hboxLayout_buttons.addWidget(self.show_compliance_data)
+            hboxLayout_buttons.addWidget(self.save_compliance_data)
+            hboxLayout_buttons.addWidget(self.start_comp_button)
+            hboxLayout_buttons.addWidget(self.end_comp_button)
+            vboxLayout.addLayout(hboxLayout)
+            vboxLayout.addLayout(hboxLayout_buttons)
+        else:
+            hboxLayout.addWidget(playBtn)
+            hboxLayout.addWidget(pauseBtn)
+            hboxLayout.addWidget(save_button)
+            vboxLayout.addLayout(hboxLayout)
 
         self.setLayout(vboxLayout)
 
@@ -477,9 +584,58 @@ class video_player(QWidget):
 
         self.mediaPlayer.durationChanged.connect(self.durationChanged)
 
+        # When press end comp gets time and popup
+        # self.start_comp_button.clicked.connect(self.)
+
+    # Slot for saving compliance data
+    def save_comp_data(self):
+        self.pause_video()
+        global c_list
+        c_list = self.compliance_list  # set global variable to self.compliance_list
+        dialog = InputDialog()
+        dialog.exec_()
+
+    # Slot for showing compliance data
+    def show_comp_data(self):
+        self.pause_video()
+        df = pd.DataFrame(self.compliance_list, columns=[
+                          'Time Start', 'Time End', 'Label'])
+        if not df.empty:
+            df.sort_values(by='Time Start', inplace=True)
+        data = df.values.tolist()
+        model_table_values = TableModel(data)
+        self.tableWidget_values = QTableView()
+        self.tableWidget_values.setModel(model_table_values)
+        self.tableWidget_values.setWindowTitle('Coded Values')
+        self.tableWidget_values.resize(600, 600)
+        self.tableWidget_values.show()
+
+    # Gets value of video when button is pressed
+    def get_start_time(self):
+        self.compliance_time_pts.append(self.mediaPlayer.position())
+        self.start_comp_button.setEnabled(False)
+        self.end_comp_button.setEnabled(True)
+
+    def get_end_time(self):
+        self.pause_video()
+        self.compliance_time_pts.append(self.mediaPlayer.position())
+        labels = ['Compliant', 'Noncompliant', 'Anticipated']
+        label, ok = QInputDialog().getItem(
+            self, 'Label Compliancy', 'Please Select Label Name of Interval:', labels, current=0, editable=False)
+        if label and ok:
+            self.compliance_time_pts.append(label)
+            self.compliance_list.append(self.compliance_time_pts)
+            self.compliance_time_pts = []
+        else:
+            self.compliance_time_pts = []
+
+        print(self.compliance_list)
+        # self.start_comp_button.setEnabled(True)
+        self.end_comp_button.setEnabled(False)
+
     def save_data(self):
         try:
-            cwd = os.getcwd() + '\\' + 'saved_data.csv'
+            cwd = os.getcwd() + '\\' + 'saved_data'
             print(cwd)
             df = pd.DataFrame(
                 self.completeList[1:], columns=self.completeList[0])
@@ -544,6 +700,10 @@ class video_player(QWidget):
         self.mediaPlayer.play()
         self.videoFlag = True
         self.pauseFlag = True
+        if self.metric == 'Compliance' and not self.end_comp_button.isEnabled() and not self.start_comp_button.isEnabled():
+            self.start_comp_button.setEnabled(True)
+        elif self.metric == 'Compliance' and not self.end_comp_button.isEnabled():
+            self.start_comp_button.setEnabled(True)
 
     # function to pause video
     def pause_video(self):
@@ -551,42 +711,64 @@ class video_player(QWidget):
         self.videoFlag = False
         print("Pausing the Video.")
 
+    # adds to the frequencyCounter list if the key is pressed at the end of the video
+    def end_of_video_pressed(self):
+        if self.iskeyPressed:
+            self.frequencyCounter.append(
+                self.mediaPlayer.position() / 1000)
+            self.frequencyCounter.append(self.keyPressed)
+            self.frequencyCounter.append(
+                self.interval_list.index(self.mediaPlayer.position()))
+            self.iskeyPressed = False
+
+    # adds to frequencyCounter list if key is pressed or if key is held at end of interval
+    def add_to_list(self, slider_size):
+        if self.iskeyPressed:
+            self.frequencyCounter.append(
+                self.mediaPlayer.position() / 1000)
+            self.frequencyCounter.append(self.keyPressed)
+            if self.mediaPlayer.position() % slider_size == 1:
+                self.frequencyCounter.append(
+                    self.interval_list.index(self.mediaPlayer.position()-1))
+                self.mediaPlayer.setPosition(
+                    self.mediaPlayer.position() - 1)
+            else:
+                self.frequencyCounter.append(
+                    self.interval_list.index(self.mediaPlayer.position()))
+            self.iskeyPressed = False
+
     def sliderTimer(self):
         # print("The time in the Video is: ", self.mediaPlayer.position())
         # If video is at end then promptEnd, removed statusChanged function
-        if self.mediaPlayer.mediaStatus() == 7:
-            if self.iskeyPressed:
-                self.frequencyCounter.append(
-                    self.mediaPlayer.position() / 1000)
-                self.frequencyCounter.append(self.keyPressed)
-                self.frequencyCounter.append(
-                    self.interval_list.index(self.mediaPlayer.position()))
-                self.iskeyPressed = False
-            self.promptEnd()
+        if self.metric != 'Compliance':
+            if self.mediaPlayer.mediaStatus() == 7:
+                self.end_of_video_pressed()
+                self.promptEnd()
 
-        elif self.pauseFlag == True:
-            x = self.sliderSize * 1000
+            elif self.pauseFlag == True:
+                x = self.sliderSize * 1000
+                if (int(self.mediaPlayer.position())) >= 1000:
+                    if self.mediaPlayer.position() % x == 0:
+                        self.pauseFlag = False
+                        self.pause_video()
+                        # adds values to frequencyCounter list
+                        self.add_to_list(x)
+                        # put the flag to reset the lock on other keys here
+                        self.promptData()
+        elif self.metric == 'Compliance' and self.mediaPlayer.mediaStatus() == 7 and len(self.compliance_time_pts) == 1:
+            self.compliance_time_pts.append(self.mediaPlayer.duration())
+            labels = ['Compliant', 'Noncompliant', 'Anticipated']
+            label, ok = QInputDialog().getItem(self, 'Label Compliancy',
+                                               'Please Select Label Name of Interval:', labels, current=0, editable=False)
+            if label and ok:
+                self.compliance_time_pts.append(label)
+                self.compliance_list.append(self.compliance_time_pts)
+                self.compliance_time_pts = []
+            else:
+                self.compliance_time_pts = []
 
-            if (int(self.mediaPlayer.position())) >= 1000:
-                if self.mediaPlayer.position() % x == 0:
-                    self.pauseFlag = False
-                    self.pause_video()
-
-                    if self.iskeyPressed:
-                        self.frequencyCounter.append(
-                            self.mediaPlayer.position() / 1000)
-                        self.frequencyCounter.append(self.keyPressed)
-                        if self.mediaPlayer.position() % x == 1:
-                            self.frequencyCounter.append(
-                                self.interval_list.index(self.mediaPlayer.position()-1))
-                            self.mediaPlayer.setPosition(
-                                self.mediaPlayer.position() - 1)
-                        else:
-                            self.frequencyCounter.append(
-                                self.interval_list.index(self.mediaPlayer.position()))
-                        self.iskeyPressed = False
-                    # put the flag to reset the lock on other keys here
-                    self.promptData()
+            print(self.compliance_list)
+            self.end_comp_button.setEnabled(False)
 
     def promptEnd(self):
         # mode 1 is end of video prompt
@@ -627,7 +809,6 @@ class video_player(QWidget):
     def keyPressEvent(self, e: QKeyEvent):
         pos = self.mediaPlayer.position()
         pos = pos / 1000.0
-
         if self.videoFlag == True:
 
             if e.text() == self.HK1 and not e.isAutoRepeat() and not self.iskeyPressed:
@@ -659,7 +840,6 @@ class video_player(QWidget):
                 self.iskeyPressed = True
                 self.keyPressed = self.HK4
                 print(self.frequencyCounter)
-
         elif self.videoFlag == False:
             print("video must be playing to use hotkeys")
 
@@ -907,7 +1087,7 @@ class TableModel(QtCore.QAbstractTableModel):
                                 'Label', 'Interval', 'Label Name', 'Frequency', 'Total Intervals']
             else:
                 self.headers = ['Time Pressed', 'Time Released',
-                                'Label', 'Interval', 'Total Intervals']
+                                'Label']
 
     def data(self, index, role):
         if role == Qt.DisplayRole:
