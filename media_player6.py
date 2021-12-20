@@ -612,13 +612,13 @@ class video_player(QWidget):
 
     # Gets value of video when button is pressed
     def get_start_time(self):
-        self.compliance_time_pts.append(self.mediaPlayer.position())
+        self.compliance_time_pts.append(self.mediaPlayer.position()/1000)
         self.start_comp_button.setEnabled(False)
         self.end_comp_button.setEnabled(True)
 
     def get_end_time(self):
         self.pause_video()
-        self.compliance_time_pts.append(self.mediaPlayer.position())
+        self.compliance_time_pts.append(self.mediaPlayer.position()/1000)
         labels = ['Compliant', 'Noncompliant', 'Anticipated']
         label, ok = QInputDialog().getItem(
             self, 'Label Compliancy', 'Please Select Label Name of Interval:', labels, current=0, editable=False)
@@ -756,7 +756,7 @@ class video_player(QWidget):
                         # put the flag to reset the lock on other keys here
                         self.promptData()
         elif self.metric == 'Compliance' and self.mediaPlayer.mediaStatus() == 7 and len(self.compliance_time_pts) == 1:
-            self.compliance_time_pts.append(self.mediaPlayer.duration())
+            self.compliance_time_pts.append(self.mediaPlayer.duration()/1000)
             labels = ['Compliant', 'Noncompliant', 'Anticipated']
             label, ok = QInputDialog().getItem(self, 'Label Compliancy',
                                                'Please Select Label Name of Interval:', labels, current=0, editable=False)
