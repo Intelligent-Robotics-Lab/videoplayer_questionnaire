@@ -716,7 +716,16 @@ class video_player(QWidget):
         if self.iskeyPressed:
             self.frequencyCounter.append(
                 self.mediaPlayer.position() / 1000)
-            self.frequencyCounter.append(self.keyPressed)
+            if self.L1 != '':
+                self.frequencyCounter.append(self.L1)
+            elif self.L2 != '':
+                self.frequencyCounter.append(self.L2)
+            elif self.L3 != '':
+                self.frequencyCounter.append(self.L3)
+            elif self.L4 != '':
+                self.frequencyCounter.append(self.L4)
+            else:
+                self.frequencyCounter.append(self.keyPressed)
             self.frequencyCounter.append(
                 self.interval_list.index(self.mediaPlayer.position()))
             self.iskeyPressed = False
@@ -726,7 +735,16 @@ class video_player(QWidget):
         if self.iskeyPressed:
             self.frequencyCounter.append(
                 self.mediaPlayer.position() / 1000)
-            self.frequencyCounter.append(self.keyPressed)
+            if self.L1 != '':
+                self.frequencyCounter.append(self.L1)
+            elif self.L2 != '':
+                self.frequencyCounter.append(self.L2)
+            elif self.L3 != '':
+                self.frequencyCounter.append(self.L3)
+            elif self.L4 != '':
+                self.frequencyCounter.append(self.L4)
+            else:
+                self.frequencyCounter.append(self.keyPressed)
             if self.mediaPlayer.position() % slider_size == 1:
                 self.frequencyCounter.append(
                     self.interval_list.index(self.mediaPlayer.position()-1))
