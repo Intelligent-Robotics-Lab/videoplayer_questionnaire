@@ -44,7 +44,6 @@ import bisect
 # helper function ms to minutes:seconds
 # test comment for madeline
 
-
 def ms_fix(ms):
     seconds = (ms / 1000) % 60
     seconds = int(seconds)
@@ -611,6 +610,7 @@ class video_player(QWidget):
         self.tableWidget_values.show()
 
     # Gets value of video when button is pressed
+
     def get_start_time(self):
         self.compliance_time_pts.append(self.mediaPlayer.position()/1000)
         self.start_comp_button.setEnabled(False)
@@ -1114,6 +1114,16 @@ class TableModel(QtCore.QAbstractTableModel):
             # .column() indexes into the sub-list
             return self._data[index.row()][index.column()]
 
+        # if index.isValid():
+        #     if role == Qt.DisplayRole or role == Qt.EditRole:
+        #         value = self._data[index.row()][index.column()]
+        #         return str(value)
+
+    # def setData(self, index, value, role):
+    #     if role == Qt.EditRole:
+    #         self._data[index.row()][index.column()] = value
+    #         return True
+
     def rowCount(self, index):
         # The length of the outer list.
         return len(self._data)
@@ -1284,7 +1294,7 @@ class FinalTable(QWidget):
             df.to_csv(self.folder_save_name.text() + '/' + self.new_file_name,
                       index=False, header=True)
             self.close()
-            window.dialog.close()
+            # window.dialog.close()
         except:
             error_dialog = QErrorMessage()
             error_dialog.showMessage('Invalid save name')
