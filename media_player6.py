@@ -498,18 +498,35 @@ class video_player(QWidget):
         self.label.setAlignment(Qt.AlignCenter)
 
         # create play button
-        playBtn = QPushButton("play Video")
+        playBtn = QPushButton("Play")
+        playBtn.setMaximumWidth(80)
         playBtn.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         playBtn.clicked.connect(self.play_video)
 
         # create pause button
-        pauseBtn = QPushButton("pause Video")
+        pauseBtn = QPushButton("Pause")
+        pauseBtn.setMaximumWidth(80)
         pauseBtn.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         pauseBtn.clicked.connect(self.pause_video)
 
-        save_button = QPushButton("Save Data")
-        save_button.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
-        save_button.clicked.connect(self.save_data)
+        # create pause button
+        end_collect = QPushButton("End Data")
+        end_collect.setMaximumWidth(80)
+        end_collect.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+        end_collect.clicked.connect(self.collect_end)
+
+        # Save data button prints output to terminal just in case the program crashes
+        # save_button = QPushButton("Save Data")
+        # save_button.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+        # save_button.clicked.connect(self.save_data)
+
+        # Text box for entering in start and end intervals for data collection
+        self.start_interval_text = QLabel('Start Int')
+        self.start_interval_input = QLineEdit()
+        self.start_interval_input.setMaximumWidth(30)
+        self.end_interval_text = QLabel('End Int')
+        self.end_interval_input = QLineEdit()
+        self.end_interval_input.setMaximumWidth(30)
 
         # If compliance is the metric add start compliance and end compliance buttons
         self.start_comp_button = QPushButton("Start Comp")
@@ -554,7 +571,7 @@ class video_player(QWidget):
         vboxLayout.addWidget(videowidget)
         hboxLayout.addLayout(vboxLayout_labels)
         hboxLayout.addWidget(self.positionSlider)
-
+        # Setting video player layout for different metrics
         if self.metric == 'Compliance':
             hboxLayout_buttons.addWidget(playBtn)
             hboxLayout_buttons.addWidget(pauseBtn)
@@ -564,10 +581,20 @@ class video_player(QWidget):
             hboxLayout_buttons.addWidget(self.end_comp_button)
             vboxLayout.addLayout(hboxLayout)
             vboxLayout.addLayout(hboxLayout_buttons)
+        elif self.metric == 'Affect' or self.metric == 'Engagement':
+            hboxLayout.addWidget(playBtn)
+            hboxLayout.addWidget(pauseBtn)
+            hboxLayout.addWidget(end_collect)
+            hboxLayout.addWidget(self.start_interval_text)
+            hboxLayout.addWidget(self.start_interval_input)
+            hboxLayout.addWidget(self.end_interval_text)
+            hboxLayout.addWidget(self.end_interval_input)
+            vboxLayout.addLayout(hboxLayout)
         else:
             hboxLayout.addWidget(playBtn)
             hboxLayout.addWidget(pauseBtn)
-            hboxLayout.addWidget(save_button)
+            hboxLayout.addWidget(end_collect)
+            # hboxLayout.addWidget(save_button)
             vboxLayout.addLayout(hboxLayout)
 
         self.setLayout(vboxLayout)
@@ -585,8 +612,13 @@ class video_player(QWidget):
 
         # When press end comp gets time and popup
         # self.start_comp_button.clicked.connect(self.)
-
     # Slot for saving compliance data
+
+    # End of data collection button
+    def collect_end(self):
+        self.mediaPlayer.pause()
+        self.promptEnd()
+
     def save_comp_data(self):
         self.pause_video()
         global c_list
@@ -633,19 +665,20 @@ class video_player(QWidget):
         # self.start_comp_button.setEnabled(True)
         self.end_comp_button.setEnabled(False)
 
-    def save_data(self):
-        try:
-            cwd = os.getcwd() + '\\' + 'saved_data'
-            print(cwd)
-            df = pd.DataFrame(
-                self.completeList[1:], columns=self.completeList[0])
-            df.to_csv(cwd, index=False, header=True)
-            print(df)
-        except:
-            error_dialog = QErrorMessage()
-            error_dialog.showMessage('Problem saving, try again please')
-            error_dialog.exec_()
-            print('error')
+    # Function saves outputs data to terminal to prevent data loss if program crashes
+    # def save_data(self):
+    #     try:
+    #         cwd = os.getcwd() + '\\' + 'saved_data'
+    #         print(cwd)
+    #         df = pd.DataFrame(
+    #             self.completeList[1:], columns=self.completeList[0])
+    #         df.to_csv(cwd, index=False, header=True)
+    #         print(df)
+    #     except:
+    #         error_dialog = QErrorMessage()
+    #         error_dialog.showMessage('Problem saving, try again please')
+    #         error_dialog.exec_()
+    #         print('error')
 
     # changes duration of content to duration param
 
@@ -965,15 +998,26 @@ class video_player(QWidget):
     def updateDataAndEnd(self):
         print("Make Window to show complete data and choose to save or not.")
         print(self.completeList)
-        if len(self.pop_up._temp) > 0:
-            for row in self.pop_up._convertedData:
-                self.completeList.append(row)
-        self.finalWindow = FinalTable(
-            self.completeList[1:], self.metric, self.interval_list)
-        self.frequencyCounter = []
-
+        try:
+            if len(self.pop_up._temp) > 0:
+                for row in self.pop_up._convertedData:
+                    self.completeList.append(row)
+            if self.metric == 'Affect' or self.metric == 'Engagement':
+                self.finalWindow = FinalTable(
+                    self.completeList[1:], self.metric, self.interval_list, int(self.start_interval_input.text()), int(self.end_interval_input
+                                                                                                                       .text()))
+            else:
+                self.finalWindow = FinalTable(
+                    self.completeList[1:], self.metric, self.interval_list)
+            self.frequencyCounter = []
+        except:
+            error_dialog = QErrorMessage()
+            error_dialog.showMessage('Please check start and end intervals')
+            error_dialog.exec_()
 
 # popUp class
+
+
 class popUpTable(QWidget):
     def __init__(self, data, mode, complete_list):  # data param is the frequencycounter list
         super().__init__()
@@ -1143,17 +1187,21 @@ class TableModel(QtCore.QAbstractTableModel):
 
 
 class FinalTable(QWidget):
-    def __init__(self, data, metric, interval_list):
+    def __init__(self, data, metric, interval_list, *args, **kwargs):
         super().__init__()
         # instance variable to store metric (ex: engagement, performance)
         self.metric = metric
         # instance variable to store interval list
         self.interval_list = interval_list
         # instance variable to store number of intervals
-        self.num_intervals = len(self.interval_list) - 1
+        if args:
+            self.num_intervals = args[1] - args[0] + 1
+        else:
+            self.num_intervals = len(self.interval_list) - 1
         # data for the file name
         self.data = data
         self.new_data = self.data
+        # Data frame with the all the coded data, before adding all the neutral or offtarget
         df = pd.DataFrame(self.new_data)
         if not df.empty:
             df.sort_values(by=0, inplace=True)
@@ -1163,9 +1211,11 @@ class FinalTable(QWidget):
         if (self.metric == 'Engagement' or self.metric == 'Affect') and not df.empty:
             # Get a list of all intervals that have been quantified
             quant_intervals = list(df[3].unique())
-            # Create list of intervals that haven't been quantified
-            not_quant_intervals = [x for x in range(1,
-                                                    self.num_intervals+1) if x not in quant_intervals]
+            # Create list of intervals that haven't been quantified. Start from the user inputed start interval
+            # End at user inputed end interval
+            not_quant_intervals = [x for x in range(
+                args[0], args[1]+1) if x not in quant_intervals]
+            # If want whole video just take those values
             for interval in not_quant_intervals:
                 # Add Off target label row for intervals not quantified
                 # variable for starting value of interval
@@ -1181,6 +1231,7 @@ class FinalTable(QWidget):
                                              interval_end, 'Neutral', interval]
             # Sort dataframe by time pressed
             df.sort_values(by=0, inplace=True)
+            df = df[(df[3] >= args[0]) & (df[3] <= args[1])]
 
             # Add Frequency and percentage values for Engagement and affect
             # Gets Label and Interval Columns
