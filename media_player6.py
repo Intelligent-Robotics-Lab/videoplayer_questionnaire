@@ -998,22 +998,22 @@ class video_player(QWidget):
     def updateDataAndEnd(self):
         print("Make Window to show complete data and choose to save or not.")
         print(self.completeList)
-        # try:
-        if len(self.pop_up._temp) > 0:
-            for row in self.pop_up._convertedData:
-                self.completeList.append(row)
-        if self.metric == 'Affect' or self.metric == 'Engagement':
-            self.finalWindow = FinalTable(
-                self.completeList[1:], self.metric, self.interval_list, int(self.start_interval_input.text()), int(self.end_interval_input
-                                                                                                                   .text()))
-        else:
-            self.finalWindow = FinalTable(
-                self.completeList[1:], self.metric, self.interval_list)
-        self.frequencyCounter = []
-        # except:
-        #     error_dialog = QErrorMessage()
-        #     error_dialog.showMessage('Please check start and end intervals')
-        #     error_dialog.exec_()
+        try:
+            if len(self.pop_up._temp) > 0:
+                for row in self.pop_up._convertedData:
+                    self.completeList.append(row)
+            if self.metric == 'Affect' or self.metric == 'Engagement':
+                self.finalWindow = FinalTable(
+                    self.completeList[1:], self.metric, self.interval_list, int(self.start_interval_input.text()), int(self.end_interval_input
+                                                                                                                    .text()))
+            else:
+                self.finalWindow = FinalTable(
+                    self.completeList[1:], self.metric, self.interval_list)
+            self.frequencyCounter = []
+        except:
+            error_dialog = QErrorMessage()
+            error_dialog.showMessage('Please check start and end intervals')
+            error_dialog.exec_()
 
 # popUp class
 
