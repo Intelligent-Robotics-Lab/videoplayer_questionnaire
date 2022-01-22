@@ -998,22 +998,22 @@ class video_player(QWidget):
     def updateDataAndEnd(self):
         print("Make Window to show complete data and choose to save or not.")
         print(self.completeList)
-        try:
-            if len(self.pop_up._temp) > 0:
-                for row in self.pop_up._convertedData:
-                    self.completeList.append(row)
-            if self.metric == 'Affect' or self.metric == 'Engagement':
-                self.finalWindow = FinalTable(
-                    self.completeList[1:], self.metric, self.interval_list, int(self.start_interval_input.text()), int(self.end_interval_input
-                                                                                                                       .text()))
-            else:
-                self.finalWindow = FinalTable(
-                    self.completeList[1:], self.metric, self.interval_list)
-            self.frequencyCounter = []
-        except:
-            error_dialog = QErrorMessage()
-            error_dialog.showMessage('Please check start and end intervals')
-            error_dialog.exec_()
+        # try:
+        if len(self.pop_up._temp) > 0:
+            for row in self.pop_up._convertedData:
+                self.completeList.append(row)
+        if self.metric == 'Affect' or self.metric == 'Engagement':
+            self.finalWindow = FinalTable(
+                self.completeList[1:], self.metric, self.interval_list, int(self.start_interval_input.text()), int(self.end_interval_input
+                                                                                                                   .text()))
+        else:
+            self.finalWindow = FinalTable(
+                self.completeList[1:], self.metric, self.interval_list)
+        self.frequencyCounter = []
+        # except:
+        #     error_dialog = QErrorMessage()
+        #     error_dialog.showMessage('Please check start and end intervals')
+        #     error_dialog.exec_()
 
 # popUp class
 
@@ -1202,13 +1202,55 @@ class FinalTable(QWidget):
         self.data = data
         self.new_data = self.data
         # Data frame with the all the coded data, before adding all the neutral or offtarget
+        # make empty dataframe if data is empty list
         df = pd.DataFrame(self.new_data)
         if not df.empty:
             df.sort_values(by=0, inplace=True)
          # If metric is engagement
          # col 1 = time pressed, col 2 = time released, col 3 = label, col 4 = interval
          # Final dataframe should not be empty, but if it is, fix this conditional to fill neutral or offtarget for all intervals
-        if (self.metric == 'Engagement' or self.metric == 'Affect') and not df.empty:
+        if (self.metric == 'Engagement' or self.metric == 'Affect') and df.empty:
+            nested_list = []
+            for interval in range(args[0], self.num_intervals + 1):
+                # Add Off target label row for intervals not quantified
+                # variable for starting value of interval
+                interval_start = (
+                    self.interval_list[interval-1] / 1000) + 0.001
+                # variable for ending value of interval
+                interval_end = (self.interval_list[interval] / 1000)
+                if self.metric == 'Engagement':
+                    nested_list.append([interval_start,
+                                        interval_end, 'Off Target', interval])
+                else:  # if metric is affect instead of engagement add this row
+                    nested_list.append([interval_start,
+                                        interval_end, 'Neutral', interval])
+            df = pd.DataFrame(nested_list)
+
+            # Add Frequency and percentage values for Engagement and affect
+            # Gets Label and Interval Columns
+            df_filtered = df[df.columns[2:4]].copy(deep=True)
+            # Checks for unique label interval combos
+            df_filtered.drop_duplicates(inplace=True)
+            # Converts pandas series of unique combos into a dataframe
+            df_filtered = (df_filtered[df_filtered.columns[0]
+                                       ].value_counts().to_frame().reset_index())
+            # Rename the columns
+            df_filtered.rename(columns={'index': 'Label Name',
+                                        2: 'Frequency'}, inplace=True)
+            # Create Percentage column
+            df_filtered['Percentage'] = round(
+                df_filtered['Frequency'] / self.num_intervals, 3)
+            # Add dataframe with data analysis to the right of the raw data, fill Na with empty strings ""
+            # Reset the index of df
+            df.reset_index(inplace=True, drop=True)
+            df_final = pd.concat([df, df_filtered], axis=1)
+            df_final.fillna("", inplace=True)
+            # Add total number of intervals column
+            df_final['Total Intervals'] = self.num_intervals
+            df_final.loc[1:, 'Total Intervals'] = ''
+            self.new_data = df_final.values.tolist()
+
+        elif (self.metric == 'Engagement' or self.metric == 'Affect') and not df.empty:
             # Get a list of all intervals that have been quantified
             quant_intervals = list(df[3].unique())
             # Create list of intervals that haven't been quantified. Start from the user inputed start interval
