@@ -11,6 +11,8 @@ from PyQt5.QtWidgets import (
     QLayout,
     QDesktopWidget,
     QTableView,
+    QHeaderView,
+    QAbstractScrollArea
 )
 from PyQt5.QtWidgets import (
     QLineEdit,
@@ -636,6 +638,8 @@ class video_player(QWidget):
         data = df.values.tolist()
         model_table_values = TableModel(data)
         self.tableWidget_values = QTableView()
+        self.tableWidget_values.horizontalHeader(
+        ).setSectionResizeMode(QHeaderView.ResizeToContents)
         self.tableWidget_values.setModel(model_table_values)
         self.tableWidget_values.setWindowTitle('Coded Values')
         self.tableWidget_values.resize(600, 600)
@@ -998,22 +1002,22 @@ class video_player(QWidget):
     def updateDataAndEnd(self):
         print("Make Window to show complete data and choose to save or not.")
         print(self.completeList)
-        # try:
-        if len(self.pop_up._temp) > 0:
-            for row in self.pop_up._convertedData:
-                self.completeList.append(row)
-        if self.metric == 'Affect' or self.metric == 'Engagement':
-            self.finalWindow = FinalTable(
-                self.completeList[1:], self.metric, self.interval_list, int(self.start_interval_input.text()), int(self.end_interval_input
-                                                                                                                   .text()))
-        else:
-            self.finalWindow = FinalTable(
-                self.completeList[1:], self.metric, self.interval_list)
-        self.frequencyCounter = []
-        # except:
-        #     error_dialog = QErrorMessage()
-        #     error_dialog.showMessage('Please check start and end intervals')
-        #     error_dialog.exec_()
+        try:
+            if len(self.pop_up._temp) > 0:
+                for row in self.pop_up._convertedData:
+                    self.completeList.append(row)
+            if self.metric == 'Affect' or self.metric == 'Engagement':
+                self.finalWindow = FinalTable(
+                    self.completeList[1:], self.metric, self.interval_list, int(self.start_interval_input.text()), int(self.end_interval_input
+                                                                                                                       .text()))
+            else:
+                self.finalWindow = FinalTable(
+                    self.completeList[1:], self.metric, self.interval_list)
+            self.frequencyCounter = []
+        except:
+            error_dialog = QErrorMessage()
+            error_dialog.showMessage('Please check start and end intervals')
+            error_dialog.exec_()
 
 # popUp class
 
@@ -1062,6 +1066,8 @@ class popUpTable(QWidget):
 
         if self._convertedData:
             self.tableWidget = QTableView()
+            self.tableWidget.horizontalHeader().setSectionResizeMode(
+                QHeaderView.ResizeToContents)
             self.model = TableModel(self._convertedData)
             self.tableWidget.setModel(self.model)
             self.grid.addWidget(self.tableWidget)
@@ -1081,6 +1087,8 @@ class popUpTable(QWidget):
         data = df.values.tolist()
         model_table_values = TableModel(data)
         self.tableWidget_values = QTableView()
+        self.tableWidget_values.horizontalHeader(
+        ).setSectionResizeMode(QHeaderView.ResizeToContents)
         self.tableWidget_values.setModel(model_table_values)
         self.tableWidget_values.setWindowTitle('Coded Values')
         self.tableWidget_values.resize(600, 600)
@@ -1350,6 +1358,8 @@ class FinalTable(QWidget):
 
         if self.new_data:
             self.tableWidget = QTableView()
+            self.tableWidget.horizontalHeader().setSectionResizeMode(
+                QHeaderView.ResizeToContents)
             self.model_2 = TableModel(self.new_data, self.metric)
             self.tableWidget.setModel(self.model_2)
             self.grid.addWidget(self.tableWidget)
