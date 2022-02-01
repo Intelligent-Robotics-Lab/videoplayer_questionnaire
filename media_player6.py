@@ -753,13 +753,13 @@ class video_player(QWidget):
         if self.iskeyPressed:
             self.frequencyCounter.append(
                 self.mediaPlayer.position() / 1000)
-            if self.L1 != '':
+            if self.keyPressed == self.HK1:
                 self.frequencyCounter.append(self.L1)
-            elif self.L2 != '':
+            elif self.keyPressed == self.HK2:
                 self.frequencyCounter.append(self.L2)
-            elif self.L3 != '':
+            elif self.keyPressed == self.HK3:
                 self.frequencyCounter.append(self.L3)
-            elif self.L4 != '':
+            elif self.keyPressed == self.HK4:
                 self.frequencyCounter.append(self.L4)
             else:
                 self.frequencyCounter.append(self.keyPressed)
@@ -772,13 +772,13 @@ class video_player(QWidget):
         if self.iskeyPressed:
             self.frequencyCounter.append(
                 self.mediaPlayer.position() / 1000)
-            if self.L1 != '':
+            if self.keyPressed == self.HK1:
                 self.frequencyCounter.append(self.L1)
-            elif self.L2 != '':
+            elif self.keyPressed == self.HK2:
                 self.frequencyCounter.append(self.L2)
-            elif self.L3 != '':
+            elif self.keyPressed == self.HK3:
                 self.frequencyCounter.append(self.L3)
-            elif self.L4 != '':
+            elif self.keyPressed == self.HK4:
                 self.frequencyCounter.append(self.L4)
             else:
                 self.frequencyCounter.append(self.keyPressed)
@@ -1009,7 +1009,7 @@ class video_player(QWidget):
             if self.metric == 'Affect' or self.metric == 'Engagement':
                 self.finalWindow = FinalTable(
                     self.completeList[1:], self.metric, self.interval_list, int(self.start_interval_input.text()), int(self.end_interval_input
-                                                                                                                    .text()))
+                                                                                                                       .text()))
             else:
                 self.finalWindow = FinalTable(
                     self.completeList[1:], self.metric, self.interval_list)
