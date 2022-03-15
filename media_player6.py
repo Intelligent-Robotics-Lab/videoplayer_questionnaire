@@ -159,10 +159,10 @@ class media_player(QWidget):
         self.defaultHK4 = self.valueHK.HKpass4
 
         # make default Label values
-        self.Ltext1 = ""
-        self.Ltext2 = ""
-        self.Ltext3 = ""
-        self.Ltext4 = ""
+        self.Ltext1 = self.valueHK.HKpass1
+        self.Ltext2 = self.valueHK.HKpass2
+        self.Ltext3 = self.valueHK.HKpass3
+        self.Ltext4 = self.valueHK.HKpass4
 
         # update combo textbox on open
         # self.ComboTextRead()
@@ -583,7 +583,7 @@ class video_player(QWidget):
             hboxLayout_buttons.addWidget(self.end_comp_button)
             vboxLayout.addLayout(hboxLayout)
             vboxLayout.addLayout(hboxLayout_buttons)
-        elif self.metric == 'Affect' or self.metric == 'Engagement':
+        else:
             hboxLayout.addWidget(playBtn)
             hboxLayout.addWidget(pauseBtn)
             hboxLayout.addWidget(end_collect)
@@ -592,12 +592,12 @@ class video_player(QWidget):
             hboxLayout.addWidget(self.end_interval_text)
             hboxLayout.addWidget(self.end_interval_input)
             vboxLayout.addLayout(hboxLayout)
-        else:
-            hboxLayout.addWidget(playBtn)
-            hboxLayout.addWidget(pauseBtn)
-            hboxLayout.addWidget(end_collect)
-            # hboxLayout.addWidget(save_button)
-            vboxLayout.addLayout(hboxLayout)
+        # else:
+        #     hboxLayout.addWidget(playBtn)
+        #     hboxLayout.addWidget(pauseBtn)
+        #     hboxLayout.addWidget(end_collect)
+        #     # hboxLayout.addWidget(save_button)
+        #     vboxLayout.addLayout(hboxLayout)
 
         self.setLayout(vboxLayout)
 
@@ -1006,13 +1006,9 @@ class video_player(QWidget):
             if len(self.pop_up._temp) > 0:
                 for row in self.pop_up._convertedData:
                     self.completeList.append(row)
-            if self.metric == 'Affect' or self.metric == 'Engagement':
-                self.finalWindow = FinalTable(
-                    self.completeList[1:], self.metric, self.interval_list, int(self.start_interval_input.text()), int(self.end_interval_input
-                                                                                                                       .text()))
-            else:
-                self.finalWindow = FinalTable(
-                    self.completeList[1:], self.metric, self.interval_list)
+            self.finalWindow = FinalTable(
+                self.completeList[1:], self.metric, self.interval_list, int(self.start_interval_input.text()), int(self.end_interval_input
+                                                                                                                   .text()))
             self.frequencyCounter = []
         except:
             error_dialog = QErrorMessage()
@@ -1148,16 +1144,6 @@ class TableModel(QtCore.QAbstractTableModel):
         self._data = data
         self.headers = ['Time Pressed', 'Time Released',
                         'Label', 'Interval']
-        for arg in args:
-            if arg == 'Engagement' or arg == 'Affect':
-                self.headers = ['Time Pressed', 'Time Released', 'Label',
-                                'Interval', 'Label Name', 'Frequency', 'Percentage', 'Total Intervals']
-            elif arg == 'Communication' or arg == 'Performance':
-                self.headers = ['Time Pressed', 'Time Released',
-                                'Label', 'Interval', 'Label Name', 'Frequency', 'Total Intervals']
-            else:
-                self.headers = ['Time Pressed', 'Time Released',
-                                'Label']
 
     def data(self, index, role):
         if role == Qt.DisplayRole:
@@ -1202,133 +1188,20 @@ class FinalTable(QWidget):
         # instance variable to store interval list
         self.interval_list = interval_list
         # instance variable to store number of intervals
+        self.start_interval = args[0]
+        self.end_interval = args[1]
         if args:
-            self.num_intervals = args[1] - args[0] + 1
+            self.num_intervals = self.end_interval - \
+                self.start_interval + 1
         else:
             self.num_intervals = len(self.interval_list) - 1
-        # data for the file name
-        self.data = data
-        self.new_data = self.data
-        # Data frame with the all the coded data, before adding all the neutral or offtarget
         # make empty dataframe if data is empty list
-        df = pd.DataFrame(self.new_data)
+        df = pd.DataFrame(data)
         if not df.empty:
             df.sort_values(by=0, inplace=True)
-         # If metric is engagement
-         # col 1 = time pressed, col 2 = time released, col 3 = label, col 4 = interval
-         # Final dataframe should not be empty, but if it is, fix this conditional to fill neutral or offtarget for all intervals
-        if (self.metric == 'Engagement' or self.metric == 'Affect') and df.empty:
-            nested_list = []
-            for interval in range(args[0], self.num_intervals + 1):
-                # Add Off target label row for intervals not quantified
-                # variable for starting value of interval
-                interval_start = (
-                    self.interval_list[interval-1] / 1000) + 0.001
-                # variable for ending value of interval
-                interval_end = (self.interval_list[interval] / 1000)
-                if self.metric == 'Engagement':
-                    nested_list.append([interval_start,
-                                        interval_end, 'Off Target', interval])
-                else:  # if metric is affect instead of engagement add this row
-                    nested_list.append([interval_start,
-                                        interval_end, 'Neutral', interval])
-            df = pd.DataFrame(nested_list)
-
-            # Add Frequency and percentage values for Engagement and affect
-            # Gets Label and Interval Columns
-            df_filtered = df[df.columns[2:4]].copy(deep=True)
-            # Checks for unique label interval combos
-            df_filtered.drop_duplicates(inplace=True)
-            # Converts pandas series of unique combos into a dataframe
-            df_filtered = (df_filtered[df_filtered.columns[0]
-                                       ].value_counts().to_frame().reset_index())
-            # Rename the columns
-            df_filtered.rename(columns={'index': 'Label Name',
-                                        2: 'Frequency'}, inplace=True)
-            # Create Percentage column
-            df_filtered['Percentage'] = round(
-                df_filtered['Frequency'] / self.num_intervals, 3)
-            # Add dataframe with data analysis to the right of the raw data, fill Na with empty strings ""
-            # Reset the index of df
-            df.reset_index(inplace=True, drop=True)
-            df_final = pd.concat([df, df_filtered], axis=1)
-            df_final.fillna("", inplace=True)
-            # Add total number of intervals column
-            df_final['Total Intervals'] = self.num_intervals
-            df_final.loc[1:, 'Total Intervals'] = ''
-            self.new_data = df_final.values.tolist()
-
-        elif (self.metric == 'Engagement' or self.metric == 'Affect') and not df.empty:
-            # Get a list of all intervals that have been quantified
-            quant_intervals = list(df[3].unique())
-            # Create list of intervals that haven't been quantified. Start from the user inputed start interval
-            # End at user inputed end interval
-            not_quant_intervals = [x for x in range(
-                args[0], args[1]+1) if x not in quant_intervals]
-            # If want whole video just take those values
-            for interval in not_quant_intervals:
-                # Add Off target label row for intervals not quantified
-                # variable for starting value of interval
-                interval_start = (
-                    self.interval_list[interval-1] / 1000) + 0.001
-                # variable for ending value of interval
-                interval_end = (self.interval_list[interval] / 1000)
-                if self.metric == 'Engagement':
-                    df.loc[len(df.index)] = [interval_start,
-                                             interval_end, 'Off Target', interval]
-                else:  # if metric is affect instead of engagement add this row
-                    df.loc[len(df.index)] = [interval_start,
-                                             interval_end, 'Neutral', interval]
-            # Sort dataframe by time pressed
-            df.sort_values(by=0, inplace=True)
-            df = df[(df[3] >= args[0]) & (df[3] <= args[1])]
-
-            # Add Frequency and percentage values for Engagement and affect
-            # Gets Label and Interval Columns
-            df_filtered = df[df.columns[2:4]].copy(deep=True)
-            # Checks for unique label interval combos
-            df_filtered.drop_duplicates(inplace=True)
-            # Converts pandas series of unique combos into a dataframe
-            df_filtered = (df_filtered[df_filtered.columns[0]
-                                       ].value_counts().to_frame().reset_index())
-            # Rename the columns
-            df_filtered.rename(columns={'index': 'Label Name',
-                                        2: 'Frequency'}, inplace=True)
-            # Create Percentage column
-            df_filtered['Percentage'] = round(
-                df_filtered['Frequency'] / self.num_intervals, 3)
-            # Add dataframe with data analysis to the right of the raw data, fill Na with empty strings ""
-            # Reset the index of df
-            df.reset_index(inplace=True, drop=True)
-            df_final = pd.concat([df, df_filtered], axis=1)
-            df_final.fillna("", inplace=True)
-            # Add total number of intervals column
-            df_final['Total Intervals'] = self.num_intervals
-            df_final.loc[1:, 'Total Intervals'] = ''
-            self.new_data = df_final.values.tolist()
-        # If metric is communication or perfomance just do frequency
-        elif (self.metric == 'Communication' or self.metric == 'Performance') and not df.empty:
-            # Get the count of each label in the label column
-            df_freq_dict = dict(df[2].value_counts())
-            # Create dataframe of unique labels and their counts
-            df_values = pd.DataFrame.from_dict(df_freq_dict, orient='index')
-            # Reset the index (puts labels as first column)
-            df_values.reset_index(level=0, inplace=True)
-            # Renames the columns
-            df_values.rename(
-                columns={'index': 'Label Name', 0: 'Frequency'}, inplace=True)
-            # Final dataframe that will be passed as self.new_data
-            df_final = pd.concat([df, df_values], axis=1)
-            df_final.fillna("", inplace=True)
-            df_final.sort_values(by=0, inplace=True)
-            # Add total number of intervals column
-            df_final['Total Intervals'] = self.num_intervals
-            df_final.loc[1:, 'Total Intervals'] = ''
-            self.new_data = df_final.values.tolist()
-        else:  # This is for compliance
-            df['Total Intervals'] = self.num_intervals
-            df.loc[1:, 'Total Intervals'] = ''
-            self.new_data = df.values.tolist()
+        df = df[(df[3] >= self.start_interval) &
+                (df[3] <= self.end_interval)]
+        self.new_data = df.values.tolist()
 
         self.setWindowTitle("Data")
         self.resize(700, 500)
@@ -1383,16 +1256,10 @@ class FinalTable(QWidget):
     def emitSaveSignal(self):
         self.new_file_name = self.file_save_name.text() + '.csv'
         print(self.folder_save_name.text() + '/' + self.new_file_name)
-        if self.metric == 'Engagement' or self.metric == 'Affect':
-            df = pd.DataFrame(self.new_data, columns=['Time Pressed', 'Time Released', 'Label',
-                                                      'Interval', 'Label Name', 'Frequency', 'Percentage', 'Total Intervals'])
-        elif self.metric == 'Communication' or self.metric == 'Performance':
-            df = pd.DataFrame(self.new_data, columns=[
-                              'Time Pressed', 'Time Released', 'Label', 'Interval', 'Label Name', 'Frequency', 'Total Intervals'])
-        else:
-            df = pd.DataFrame(self.new_data, columns=[
-                              'Time Pressed', 'Time Released', 'Label', 'Interval', 'Total Intervals'])
-
+        df = pd.DataFrame(self.new_data, columns=[
+                          'Time Pressed', 'Time Released', 'Label', 'Interval'])
+        # df = df[(df['Interval'] >= self.start_interval) &
+        #         (df['Interval'] <= self.end_interval)]
         try:
             df.to_csv(self.folder_save_name.text() + '/' + self.new_file_name,
                       index=False, header=True)
