@@ -190,8 +190,8 @@ class media_player(QWidget):
         self.slider.setTickInterval(1)
         self.slider.setRange(5, 30)
         self.slider.setSingleStep(1)
-        self.slider.setValue(5)
-        self.sliderEdit.setText(str(5))
+        self.slider.setValue(10)
+        self.sliderEdit.setText(str(10))
         self.sliderLabel.setText("Interval: ")
 
         # setup txtbox/nextPage
@@ -266,7 +266,6 @@ class media_player(QWidget):
         self.defaultHK2 = HKpass2
         self.defaultHK3 = HKpass3
         self.defaultHK4 = HKpass4
-        print(self.defaultHK2)
 
     # passes label names to main window from the hotkey class
     def LtxtGrab(self, Ltxt1, Ltxt2, Ltxt3, Ltxt4):
@@ -274,7 +273,6 @@ class media_player(QWidget):
         self.Ltext2 = Ltxt2
         self.Ltext3 = Ltxt3
         self.Ltext4 = Ltxt4
-        print(self.Ltext1)
 
     # function to swap pages, brings up media player
 
@@ -688,6 +686,66 @@ class video_player(QWidget):
 
     def durationChanged(self, duration):
         self.positionSlider.setRange(0, duration)
+        self.positionSlider.setStyleSheet(
+            '''
+            QSlider::groove:horizontal {
+border: 1px solid #bbb;
+background: white;
+height: 10px;
+border-radius: 4px;
+}
+
+QSlider::sub-page:horizontal {
+background: qlineargradient(x1: 0, y1: 0,    x2: 0, y2: 1,
+    stop: 0 #66e, stop: 1 #bbf);
+background: qlineargradient(x1: 0, y1: 0.2, x2: 1, y2: 1,
+    stop: 0 #bbf, stop: 1 #55f);
+border: 1px solid #777;
+height: 10px;
+border-radius: 4px;
+}
+
+QSlider::add-page:horizontal {
+background: #fff;
+border: 1px solid #777;
+height: 10px;
+border-radius: 4px;
+}
+
+QSlider::handle:horizontal {
+background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+    stop:0 #eee, stop:1 #ccc);
+border: 1px solid #777;
+width: 13px;
+margin-top: -6px;
+margin-bottom: -6px;
+border-radius: 4px;
+}
+
+QSlider::handle:horizontal:hover {
+background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+    stop:0 #fff, stop:1 #ddd);
+border: 1px solid #444;
+border-radius: 4px;
+}
+
+QSlider::sub-page:horizontal:disabled {
+background: #bbb;
+border-color: #999;
+}
+
+QSlider::add-page:horizontal:disabled {
+background: #eee;
+border-color: #999;
+}
+
+QSlider::handle:horizontal:disabled {
+background: #eee;
+border: 1px solid #aaa;
+border-radius: 4px;
+}
+            '''
+        )
 
     def interval_calc(self, duration):
         for i in range(0, duration, self.sliderSize*1000):
@@ -746,7 +804,7 @@ class video_player(QWidget):
     def pause_video(self):
         self.mediaPlayer.pause()
         self.videoFlag = False
-        print("Pausing the Video.")
+        #print("Pausing the Video.")
 
     # adds to the frequencyCounter list if the key is pressed at the end of the video
     def end_of_video_pressed(self):
@@ -835,7 +893,7 @@ class video_player(QWidget):
         check_num = self.mediaPlayer.position() - (self.mediaPlayer.position() %
                                                    (self.sliderSize * 1000))
         interval = self.interval_list.index(check_num)
-        print('interval is:', interval)
+        #print('interval is:', interval)
         df = pd.DataFrame(self.completeList)
         print(df)
         if interval in list(df[3]):
@@ -848,7 +906,7 @@ class video_player(QWidget):
             button = dialog.exec_()
             if button == QMessageBox.Yes:
                 df.drop(df[df[3] == interval].index, inplace=True)
-                print('df after deletion:', df)
+                #print('df after deletion:', df)
                 self.completeList = df.values.tolist()
                 # mode 0 is regular slider interval
                 self.pop_up = popUpTable(
@@ -954,19 +1012,19 @@ class video_player(QWidget):
             print("video must be playing to use hotkeys")
 
     def updateSaveData(self):
-        print("Adding this list onto the 2D Final List")
+        #print("Adding this list onto the 2D Final List")
         # self.pop_up.temp contains self.frequency coutner
         # only if frequecycounter isn't empty do this
         if len(self.pop_up._temp) > 0:
             for row in self.pop_up._convertedData:
                 self.completeList.append(row)
         self.frequencyCounter = []
-        print('complete list:', self.completeList)
-        print('time in video is:', self.mediaPlayer.position())
+        # print('complete list:', self.completeList)
+        # print('time in video is:', self.mediaPlayer.position())
         self.mediaPlayer.setPosition(self.mediaPlayer.position() + 1)
 
     def updateRedoData(self, num_int):
-        print("Deleting data and moving position back to before this run through.")
+        #print("Deleting data and moving position back to before this run through.")
         self.frequencyCounter = []
         x = self.sliderSize * 1000
         if self.mediaPlayer.position() % x == 0:
@@ -974,30 +1032,30 @@ class video_player(QWidget):
                 self.mediaPlayer.position() - (num_int * self.sliderSize * 1000) + 1
             )
 
-            print("returning to:", self.mediaPlayer.position() -
-                  (self.sliderSize * 1000) + 1)
+            # print("returning to:", self.mediaPlayer.position() -
+            #       (self.sliderSize * 1000) + 1)
 
         elif self.mediaPlayer.position() % x == 1:
             self.mediaPlayer.setPosition(
                 self.mediaPlayer.position() - (num_int * self.sliderSize * 1000)
             )
-            print("returning to:", self.mediaPlayer.position() -
-                  (self.sliderSize * 1000))
+            # print("returning to:", self.mediaPlayer.position() -
+            #       (self.sliderSize * 1000))
 
         elif self.mediaPlayer.position() % x == 2:
             self.mediaPlayer.setPosition(
                 self.mediaPlayer.position() - (num_int * self.sliderSize * 1000) - 1
             )
-            print("returning to:", self.mediaPlayer.position() -
-                  (self.sliderSize * 1000) - 1)
+            # print("returning to:", self.mediaPlayer.position() -
+            #       (self.sliderSize * 1000) - 1)
 
         else:
 
             self.mediaPlayer.setPosition(
                 self.mediaPlayer.position() - (num_int * self.mediaPlayer.position() % x) + 1
             )
-            print("returning to:", (self.mediaPlayer.position() -
-                                    (self.mediaPlayer.position() % x) + 1))
+            # print("returning to:", (self.mediaPlayer.position() -
+            #                         (self.mediaPlayer.position() % x) + 1))
 
     def updateDataAndEnd(self):
         print("Make Window to show complete data and choose to save or not.")
@@ -1255,7 +1313,7 @@ class FinalTable(QWidget):
 
     def emitSaveSignal(self):
         self.new_file_name = self.file_save_name.text() + '.csv'
-        print(self.folder_save_name.text() + '/' + self.new_file_name)
+        #print(self.folder_save_name.text() + '/' + self.new_file_name)
         df = pd.DataFrame(self.new_data, columns=[
                           'Time Pressed', 'Time Released', 'Label', 'Interval'])
         # df = df[(df['Interval'] >= self.start_interval) &
