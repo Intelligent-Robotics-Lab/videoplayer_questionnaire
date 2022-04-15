@@ -1,3 +1,4 @@
+from tracemalloc import start
 import pandas as pd
 import sys
 from PyQt5.QtWidgets import (
@@ -90,6 +91,8 @@ class Window(QMainWindow, Ui_MainWindow):
             if ioa < float(self.ui.lineEdit_4.text()):
                 self.ui.textEdit.setText(
                     "fix ioa score. Recode the video together. These positive intervals:" + str(res))
+            else:
+                self.ui.textEdit.setText("N/A")
 
         elif self.metric == 'Affect (Negative)':
             df1['Label'] = df1['Label'].str.lower()
@@ -119,6 +122,57 @@ class Window(QMainWindow, Ui_MainWindow):
             if ioa < float(self.ui.lineEdit_4.text()):
                 self.ui.textEdit.setText(
                     "fix ioa score. Recode the video together. These negative intervals:" + str(res))
+            else:
+                self.ui.textEdit.setText("N/A")
+
+        elif self.metric == 'Affect (Total)':
+            df1['Label'] = df1['Label'].str.lower()
+            df2['Label'] = df2['Label'].str.lower()
+            df1['Label'] = df1['Label'].str.strip()
+            df2['Label'] = df2['Label'].str.strip()
+
+            start_interval = int(self.ui.lineEdit_5.text())
+            end_interval = int(self.ui.lineEdit_6.text())
+            df1_unique_intervals = list(df1['Interval'].unique())
+            df2_unique_intervals = list(df2['Interval'].unique())
+            # print(df1_unique_intervals)
+            # print(df2_unique_intervals)
+
+            for i in range(start_interval, end_interval+1):
+                if i not in df1_unique_intervals:
+                    time_pressed = (i-1) * 10 + 0.001
+                    time_released = i * 10
+                    label = "neutral"
+                    interval = i
+                    add_row = {"Time Pressed": time_pressed,
+                               "Time Released": time_released, "Label": label, "Interval": interval}
+                    df1 = df1.append(add_row, ignore_index=True)
+
+                if i not in df2_unique_intervals:
+                    time_pressed = (i-1) * 10 + 0.001
+                    time_released = i * 10
+                    label = "neutral"
+                    interval = i
+                    add_row = {"Time Pressed": time_pressed,
+                               "Time Released": time_released, "Label": label, "Interval": interval}
+                    df2 = df2.append(add_row, ignore_index=True)
+
+            df1['zip'] = list(zip(df1['Label'], df1['Interval']))
+            df2['zip'] = list(zip(df2['Label'], df2['Interval']))
+            df1_unique_val = list(df1['zip'].unique())
+            df2_unique_val = list(df2['zip'].unique())
+            count_match = sum(
+                val in df2_unique_val for val in df1_unique_val)
+            ioa = round(count_match / (end_interval - start_interval + 1), 3)
+            self.ui.lineEdit_3.setText(str(ioa))
+            fix_int = list(
+                sorted(set(df1_unique_val).symmetric_difference(set(df2_unique_val))))
+            res = set(list(zip(*fix_int))[-1])
+            if ioa < float(self.ui.lineEdit_4.text()):
+                self.ui.textEdit.setText(
+                    "fix ioa score. Recode the video together. These intervals:" + str(res))
+            else:
+                self.ui.textEdit.setText("N/A")
 
         # except:
         #     error_dialog = QErrorMessage()
