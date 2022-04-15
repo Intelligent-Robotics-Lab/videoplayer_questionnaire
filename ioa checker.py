@@ -43,29 +43,87 @@ class Window(QMainWindow, Ui_MainWindow):
             error_dialog.exec_()
 
     def calculate(self):
-        try:
-            df1 = pd.read_csv(self.ui.lineEdit.text())
-            df2 = pd.read_csv(self.ui.lineEdit_2.text())
-            # print(self.metric)
-            if self.metric == 'Performance' or self.metric == 'Communication' or self.metric == 'Positive (Affect)' or self.metric == 'Negative (Affect)':
-                freq_df1 = df1.shape[0]
-                freq_df2 = df2.shape[0]
-                ioa = 0
-                if freq_df1 < freq_df2:
-                    ioa = freq_df1/freq_df2
-                else:
-                    ioa = freq_df2/freq_df1
-                self.ui.lineEdit_3.setText(str(ioa))
+        # try:
+        df1 = pd.read_csv(self.ui.lineEdit.text())
+        df2 = pd.read_csv(self.ui.lineEdit_2.text())
+        # print(self.metric)
+        if self.metric == 'Performance' or self.metric == 'Communication':
+            freq_df1 = df1.shape[0]
+            freq_df2 = df2.shape[0]
+            ioa = 0
+            if freq_df1 < freq_df2:
+                ioa = freq_df1/freq_df2
+            else:
+                ioa = freq_df2/freq_df1
+            self.ui.lineEdit_3.setText(str(ioa))
 
-                if ioa < float(self.ui.lineEdit_4.text()):
-                    self.ui.textEdit.setText(
-                        "fix ioa score. Recode the video together")
-                else:
-                    self.ui.textEdit.setText("N/A")
-        except:
-            error_dialog = QErrorMessage()
-            error_dialog.showMessage('Check inputs, something went wrong')
-            error_dialog.exec_()
+            if ioa < float(self.ui.lineEdit_4.text()):
+                self.ui.textEdit.setText(
+                    "fix ioa score. Recode the video together")
+            else:
+                self.ui.textEdit.setText("N/A")
+        elif self.metric == 'Affect (Positive)':
+            df1['Label'] = df1['Label'].str.lower()
+            df2['Label'] = df2['Label'].str.lower()
+            df1['Label'] = df1['Label'].str.strip()
+            df2['Label'] = df2['Label'].str.strip()
+
+            df1 = df1[df1['Label'] == 'positive']
+            df2 = df2[df2['Label'] == 'positive']
+
+            df1['zip'] = list(zip(df1['Label'], df1['Interval']))
+            df2['zip'] = list(zip(df2['Label'], df2['Interval']))
+            df1_unique_pos = list(df1['zip'].unique())
+            df2_unique_pos = list(df2['zip'].unique())
+            df1_pos = len(df1_unique_pos)
+            df2_pos = len(df2_unique_pos)
+            ioa = 0
+
+            if df1_pos < df2_pos:
+                ioa = df1_pos/df2_pos
+            else:
+                ioa = df2_pos/df1_pos
+            self.ui.lineEdit_3.setText(str(ioa))
+            fix_int = list(
+                sorted(set(df1_unique_pos).symmetric_difference(set(df2_unique_pos))))
+            res = list(zip(*fix_int))[-1]
+            if ioa < float(self.ui.lineEdit_4.text()):
+                self.ui.textEdit.setText(
+                    "fix ioa score. Recode the video together. These positive intervals:" + str(res))
+
+        elif self.metric == 'Affect (Negative)':
+            df1['Label'] = df1['Label'].str.lower()
+            df2['Label'] = df2['Label'].str.lower()
+            df1['Label'] = df1['Label'].str.strip()
+            df2['Label'] = df2['Label'].str.strip()
+
+            df1 = df1[df1['Label'] == 'negative']
+            df2 = df2[df2['Label'] == 'negative']
+
+            df1['zip'] = list(zip(df1['Label'], df1['Interval']))
+            df2['zip'] = list(zip(df2['Label'], df2['Interval']))
+            df1_unique_pos = list(df1['zip'].unique())
+            df2_unique_pos = list(df2['zip'].unique())
+            df1_pos = len(df1_unique_pos)
+            df2_pos = len(df2_unique_pos)
+            ioa = 0
+
+            if df1_pos < df2_pos:
+                ioa = df1_pos/df2_pos
+            else:
+                ioa = df2_pos/df1_pos
+            self.ui.lineEdit_3.setText(str(ioa))
+            fix_int = list(
+                sorted(set(df1_unique_pos).symmetric_difference(set(df2_unique_pos))))
+            res = list(zip(*fix_int))[-1]
+            if ioa < float(self.ui.lineEdit_4.text()):
+                self.ui.textEdit.setText(
+                    "fix ioa score. Recode the video together. These negative intervals:" + str(res))
+
+        # except:
+        #     error_dialog = QErrorMessage()
+        #     error_dialog.showMessage('Check inputs, something went wrong')
+        #     error_dialog.exec_()
 
     def text_changed(self):
         self.metric = str(self.ui.comboBox.currentText())
