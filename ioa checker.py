@@ -181,6 +181,12 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def text_changed(self):
         self.metric = str(self.ui.comboBox.currentText())
+        if self.metric == 'Communication' or self.metric == 'Performance':
+            self.ui.lineEdit_5.setEnabled(False)
+            self.ui.lineEdit_6.setEnabled(False)
+        else:
+            self.ui.lineEdit_5.setEnabled(True)
+            self.ui.lineEdit_6.setEnabled(True)
 
 
 if __name__ == '__main__':
