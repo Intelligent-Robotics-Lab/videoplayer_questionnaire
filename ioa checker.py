@@ -167,7 +167,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.ui.lineEdit_3.setText(str(ioa))
             fix_int = list(
                 sorted(set(df1_unique_val).symmetric_difference(set(df2_unique_val))))
-            res = set(list(zip(*fix_int))[-1])
+            res = sorted(set(list(zip(*fix_int))[-1]))
             if ioa < float(self.ui.lineEdit_4.text()):
                 self.ui.textEdit.setText(
                     "fix ioa score. Recode the video together. These intervals:" + str(res))
