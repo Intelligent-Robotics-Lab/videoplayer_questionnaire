@@ -1261,7 +1261,7 @@ class FinalTable(QWidget):
                 (df[3] <= self.end_interval)]
         self.new_data = df.values.tolist()
 
-        self.setWindowTitle("Data")
+        self.setWindowTitle("Final Save Table")
         self.resize(700, 500)
         self.center()
         self.init_ui()
