@@ -56,72 +56,11 @@ class Window(QMainWindow, Ui_MainWindow):
                 ioa = freq_df1/freq_df2
             else:
                 ioa = freq_df2/freq_df1
-            self.ui.lineEdit_3.setText(str(ioa))
+            self.ui.textEdit_2.setText(str(ioa))
 
             if ioa < float(self.ui.lineEdit_4.text()):
                 self.ui.textEdit.setText(
                     "fix ioa score. Recode the video together")
-            else:
-                self.ui.textEdit.setText("N/A")
-        elif self.metric == 'Affect (Positive)':
-            df1['Label'] = df1['Label'].str.lower()
-            df2['Label'] = df2['Label'].str.lower()
-            df1['Label'] = df1['Label'].str.strip()
-            df2['Label'] = df2['Label'].str.strip()
-
-            df1 = df1[df1['Label'] == 'positive']
-            df2 = df2[df2['Label'] == 'positive']
-
-            df1['zip'] = list(zip(df1['Label'], df1['Interval']))
-            df2['zip'] = list(zip(df2['Label'], df2['Interval']))
-            df1_unique_pos = list(df1['zip'].unique())
-            df2_unique_pos = list(df2['zip'].unique())
-            df1_pos = len(df1_unique_pos)
-            df2_pos = len(df2_unique_pos)
-            ioa = 0
-
-            if df1_pos < df2_pos:
-                ioa = df1_pos/df2_pos
-            else:
-                ioa = df2_pos/df1_pos
-            self.ui.lineEdit_3.setText(str(ioa))
-            fix_int = list(
-                sorted(set(df1_unique_pos).symmetric_difference(set(df2_unique_pos))))
-            res = list(zip(*fix_int))[-1]
-            if ioa < float(self.ui.lineEdit_4.text()):
-                self.ui.textEdit.setText(
-                    "fix ioa score. Recode the video together. These positive intervals:" + str(res))
-            else:
-                self.ui.textEdit.setText("N/A")
-
-        elif self.metric == 'Affect (Negative)':
-            df1['Label'] = df1['Label'].str.lower()
-            df2['Label'] = df2['Label'].str.lower()
-            df1['Label'] = df1['Label'].str.strip()
-            df2['Label'] = df2['Label'].str.strip()
-
-            df1 = df1[df1['Label'] == 'negative']
-            df2 = df2[df2['Label'] == 'negative']
-
-            df1['zip'] = list(zip(df1['Label'], df1['Interval']))
-            df2['zip'] = list(zip(df2['Label'], df2['Interval']))
-            df1_unique_pos = list(df1['zip'].unique())
-            df2_unique_pos = list(df2['zip'].unique())
-            df1_pos = len(df1_unique_pos)
-            df2_pos = len(df2_unique_pos)
-            ioa = 0
-
-            if df1_pos < df2_pos:
-                ioa = df1_pos/df2_pos
-            else:
-                ioa = df2_pos/df1_pos
-            self.ui.lineEdit_3.setText(str(ioa))
-            fix_int = list(
-                sorted(set(df1_unique_pos).symmetric_difference(set(df2_unique_pos))))
-            res = list(zip(*fix_int))[-1]
-            if ioa < float(self.ui.lineEdit_4.text()):
-                self.ui.textEdit.setText(
-                    "fix ioa score. Recode the video together. These negative intervals:" + str(res))
             else:
                 self.ui.textEdit.setText("N/A")
 
@@ -161,14 +100,56 @@ class Window(QMainWindow, Ui_MainWindow):
             df2['zip'] = list(zip(df2['Label'], df2['Interval']))
             df1_unique_val = list(df1['zip'].unique())
             df2_unique_val = list(df2['zip'].unique())
+            df1_neg_count = 0
+            df1_pos_count = 0
+            df1_neut_count = 0
+            df2_neg_count = 0
+            df2_pos_count = 0
+            df2_neut_count = 0
+            pos_ioa = 0
+            neg_ioa = 0
+            neut_ioa = 0
+            for val in df1_unique_val:
+                if val[0] == 'negative':
+                    df1_neg_count += 1
+                elif val[0] == 'positive':
+                    df1_pos_count += 1
+                else:
+                    df1_neut_count += 1
+            for val in df2_unique_val:
+                if val[0] == 'negative':
+                    df2_neg_count += 1
+                elif val[0] == 'positive':
+                    df2_pos_count += 1
+                else:
+                    df2_neut_count += 1
+
+            if df1_neg_count < df2_neg_count:
+                neg_ioa = round(df1_neg_count / df2_neg_count, 3)
+            else:
+                neg_ioa = round(df2_neg_count / df1_neg_count, 3)
+
+            if df1_pos_count < df2_pos_count:
+                pos_ioa = round(df1_pos_count / df2_pos_count, 3)
+            else:
+                pos_ioa = round(df2_pos_count / df1_pos_count, 3)
+
+            if df1_neut_count < df2_neut_count:
+                neut_ioa = round(df1_neut_count / df2_neut_count, 3)
+            else:
+                neut_ioa = round(df2_neut_count / df1_neut_count, 3)
+
             count_match = sum(
                 val in df2_unique_val for val in df1_unique_val)
-            ioa = round(count_match / (end_interval - start_interval + 1), 3)
-            self.ui.lineEdit_3.setText(str(ioa))
+            total_ioa = round(
+                count_match / (end_interval - start_interval + 1), 3)
+            ioa_text = "Total IOA: " + str(total_ioa) + "\n" + "Positive IOA: " + str(pos_ioa) + "\n" + "Negative IOA: " + str(neg_ioa) + \
+                "\n" + "Neutral IOA: " + str(neut_ioa)
+            self.ui.textEdit_2.setText(ioa_text)
             fix_int = list(
                 sorted(set(df1_unique_val).symmetric_difference(set(df2_unique_val))))
             res = sorted(set(list(zip(*fix_int))[-1]))
-            if ioa < float(self.ui.lineEdit_4.text()):
+            if total_ioa < float(self.ui.lineEdit_4.text()):
                 self.ui.textEdit.setText(
                     "fix ioa score. Recode the video together. These intervals:" + str(res))
             else:

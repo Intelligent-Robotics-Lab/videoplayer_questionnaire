@@ -149,16 +149,6 @@ p, li { white-space: pre-wrap; }
        </item>
        <item>
         <property name="text">
-         <string>Affect (Positive)</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Affect (Negative)</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
          <string>Communication</string>
         </property>
        </item>
@@ -188,8 +178,8 @@ p, li { white-space: pre-wrap; }
      <rect>
       <x>50</x>
       <y>200</y>
-      <width>203</width>
-      <height>24</height>
+      <width>271</width>
+      <height>121</height>
      </rect>
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -201,7 +191,7 @@ p, li { white-space: pre-wrap; }
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineEdit_3"/>
+      <widget class="QTextEdit" name="textEdit_2"/>
      </item>
     </layout>
    </widget>
