@@ -40,11 +40,12 @@ import os
 from numpy import VisibleDeprecationWarning, e
 import pandas as pd
 import bisect
-
+from pandas.api.types import is_numeric_dtype
 
 # lel
 # helper function ms to minutes:seconds
 # test comment for madeline
+
 
 def ms_fix(ms):
     seconds = (ms / 1000) % 60
@@ -1064,10 +1065,20 @@ border-radius: 4px;
             if len(self.pop_up._temp) > 0:
                 for row in self.pop_up._convertedData:
                     self.completeList.append(row)
-            self.finalWindow = FinalTable(
-                self.completeList[1:], self.metric, self.interval_list, int(self.start_interval_input.text()), int(self.end_interval_input
-                                                                                                                   .text()))
+            if len(self.completeList) < 2:
+                start_end_int_string = self.start_interval_input.text() + '-' + \
+                    self.end_interval_input.text()
+                self.completeList.append(
+                    ['N/A', 'N/A', 'No Data Coded', start_end_int_string])
+                self.finalWindow = FinalTable(
+                    self.completeList[1:], self.metric, self.interval_list, int(self.start_interval_input.text()), int(self.end_interval_input
+                                                                                                                       .text()))
+            else:
+                self.finalWindow = FinalTable(
+                    self.completeList[1:], self.metric, self.interval_list, int(self.start_interval_input.text()), int(self.end_interval_input
+                                                                                                                       .text()))
             self.frequencyCounter = []
+
         except:
             error_dialog = QErrorMessage()
             error_dialog.showMessage('Please check start and end intervals')
@@ -1257,8 +1268,9 @@ class FinalTable(QWidget):
         df = pd.DataFrame(data)
         if not df.empty:
             df.sort_values(by=0, inplace=True)
-        df = df[(df[3] >= self.start_interval) &
-                (df[3] <= self.end_interval)]
+        if is_numeric_dtype(df[3]):
+            df = df[(df[3] >= self.start_interval) &
+                    (df[3] <= self.end_interval)]
         self.new_data = df.values.tolist()
 
         self.setWindowTitle("Final Save Table")
