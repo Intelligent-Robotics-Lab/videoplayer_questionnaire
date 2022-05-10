@@ -124,17 +124,23 @@ class Window(QMainWindow, Ui_MainWindow):
                 else:
                     df2_neut_count += 1
 
-            if df1_neg_count < df2_neg_count:
+            if df1_neg_count == 0 and df2_neg_count == 0:
+                neg_ioa = 'N/A'
+            elif df1_neg_count < df2_neg_count:
                 neg_ioa = round(df1_neg_count / df2_neg_count, 3)
             else:
                 neg_ioa = round(df2_neg_count / df1_neg_count, 3)
 
-            if df1_pos_count < df2_pos_count:
+            if df1_pos_count == 0 and df2_pos_count == 0:
+                pos_ioa = 'N/A'
+            elif df1_pos_count < df2_pos_count:
                 pos_ioa = round(df1_pos_count / df2_pos_count, 3)
             else:
                 pos_ioa = round(df2_pos_count / df1_pos_count, 3)
 
-            if df1_neut_count < df2_neut_count:
+            if df1_neut_count == 0 and df2_neut_count == 0:
+                neut_ioa = 'N/A'
+            elif df1_neut_count < df2_neut_count:
                 neut_ioa = round(df1_neut_count / df2_neut_count, 3)
             else:
                 neut_ioa = round(df2_neut_count / df1_neut_count, 3)
