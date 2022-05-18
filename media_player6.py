@@ -256,7 +256,7 @@ class media_player(QWidget):
     # file selector
     def fileExplore(self):
         self.filename, _ = QFileDialog.getOpenFileName(
-            self, "Open Video", filter="video (*.mp4)"
+            self, "Open Video", filter="video (*.mp4)", options=QFileDialog.DontUseNativeDialog
         )
         self.txtBox.setText(self.filename)
         self.data = self.filename
