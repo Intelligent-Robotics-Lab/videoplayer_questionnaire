@@ -96,6 +96,10 @@ class Window(QMainWindow, Ui_MainWindow):
                                "Time Released": time_released, "Label": label, "Interval": interval}
                     df2 = df2.append(add_row, ignore_index=True)
 
+            df1 = df1[(df1['Interval'] >= start_interval)
+                      & (df1['Interval'] <= end_interval)]
+            df2 = df2[(df2['Interval'] >= start_interval)
+                      & (df2['Interval'] <= end_interval)]
             df1['zip'] = list(zip(df1['Label'], df1['Interval']))
             df2['zip'] = list(zip(df2['Label'], df2['Interval']))
             df1_unique_val = list(df1['zip'].unique())
